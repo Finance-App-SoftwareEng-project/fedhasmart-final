@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +15,12 @@ import { Plus, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Goals() {
-  const { user, loading: authLoading } = useAuth();
+  const { user: supabaseUser, loading: authLoading } = useAuth();
+  const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
+  
+  // Use unified user if available, otherwise fall back to Supabase user
+  const user = unifiedUser || supabaseUser;
   const [goals, setGoals] = useState<any[]>([]);
   const [openGoal, setOpenGoal] = useState(false);
   const [openContribution, setOpenContribution] = useState(false);

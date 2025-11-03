@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnifiedAuth } from "@/contexts/UnifiedAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +30,11 @@ interface Income {
 const INCOME_SOURCES = ["Salary", "Freelance", "Business", "Investment", "Gift", "Other"];
 
 export default function Income() {
-  const { user } = useAuth();
+  const { user: supabaseUser } = useAuth();
+  const { user: unifiedUser } = useUnifiedAuth();
+  
+  // Use unified user if available, otherwise fall back to Supabase user
+  const user = unifiedUser || supabaseUser;
   const { toast } = useToast();
   const [income, setIncome] = useState<Income[]>([]);
   const [loading, setLoading] = useState(false);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,11 @@ import { toast } from 'sonner';
 import { Trash2, UserX, Loader2, Pencil, X } from 'lucide-react';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user: supabaseUser } = useAuth();
+  const { user: unifiedUser } = useUnifiedAuth();
+  
+  // Use unified user if available, otherwise fall back to Supabase user
+  const user = unifiedUser || supabaseUser;
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(false);

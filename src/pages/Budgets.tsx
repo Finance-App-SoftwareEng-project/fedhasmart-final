@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,8 +18,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Other'];
 
 export default function Budgets() {
-  const { user, loading: authLoading } = useAuth();
+  const { user: supabaseUser, loading: authLoading } = useAuth();
+  const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
+  
+  // Use unified user if available, otherwise fall back to Supabase user
+  const user = unifiedUser || supabaseUser;
   const [budgets, setBudgets] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
