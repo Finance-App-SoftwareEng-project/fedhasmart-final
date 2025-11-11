@@ -24,8 +24,8 @@ export const Navbar = () => {
         <div className="flex h-16 items-center justify-between gap-4">
           <Link to="/dashboard" className="flex items-center gap-2 font-bold text-lg sm:text-xl text-primary shrink-0">
             <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="hidden xs:inline">FinanceTracker</span>
-            <span className="xs:hidden">FT</span>
+            <span className="hidden xs:inline">FedhaSmart</span>
+            <span className="xs:hidden">FedhaSmart</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
