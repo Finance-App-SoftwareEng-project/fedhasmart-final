@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +15,12 @@ import { Plus, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Goals() {
-  const { user, loading: authLoading } = useAuth();
+  const { user: supabaseUser, loading: authLoading } = useAuth();
+  const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
+  
+  // Use unified user if available, otherwise fall back to Supabase user
+  const user = unifiedUser || supabaseUser;
   const [goals, setGoals] = useState<any[]>([]);
   const [openGoal, setOpenGoal] = useState(false);
   const [openContribution, setOpenContribution] = useState(false);
@@ -129,9 +134,9 @@ export default function Goals() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Savings Goals</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Savings Goals</h1>
           <Dialog open={openGoal} onOpenChange={setOpenGoal}>
             <DialogTrigger asChild>
               <Button>
