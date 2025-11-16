@@ -366,7 +366,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Expenses by Category</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Expenses by Category This Month</CardTitle>
             </CardHeader>
             <CardContent>
               {expensesByCategory.length > 0 ? (
