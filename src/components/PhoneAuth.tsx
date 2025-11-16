@@ -1,41 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { ConfirmationResult, RecaptchaVerifier } from 'firebase/auth';
-import { useFirebaseAuth } from '@/contexts/FirebaseAuthContext';
+import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
+import { toast } from 'sonner';
 
 export const PhoneAuth: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const { setupRecaptcha, signInWithPhone, verifyOTP, user } = useFirebaseAuth();
-
-  useEffect(() => {
-    try {
-      // Setup reCAPTCHA when component mounts
-      const verifier = setupRecaptcha('recaptcha-container');
-      setRecaptchaVerifier(verifier);
-
-      return () => {
-        // Cleanup reCAPTCHA when component unmounts
-        if (verifier) {
-          verifier.clear();
-        }
-      };
-    } catch (error) {
-      console.error('Error setting up reCAPTCHA:', error);
-      setError('Failed to initialize authentication. Please refresh the page.');
-    }
-  }, []);
+  const { user } = useUnifiedAuth();
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,26 +34,22 @@ export const PhoneAuth: React.FC = () => {
       return;
     }
 
-    if (!recaptchaVerifier) {
-      setError('reCAPTCHA not initialized');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const confirmation = await signInWithPhone(phoneNumber, recaptchaVerifier);
-      setConfirmationResult(confirmation);
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber,
+      });
+
+      if (error) throw error;
+
+      setOtpSent(true);
       setSuccess('OTP sent successfully! Check your phone.');
+      toast.success('OTP sent to your phone');
     } catch (err: any) {
       console.error('Error sending OTP:', err);
       setError(err.message || 'Failed to send OTP. Please try again.');
-      // Reset reCAPTCHA on error
-      if (recaptchaVerifier) {
-        recaptchaVerifier.clear();
-        const newVerifier = setupRecaptcha('recaptcha-container');
-        setRecaptchaVerifier(newVerifier);
-      }
+      toast.error(err.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -88,7 +65,7 @@ export const PhoneAuth: React.FC = () => {
       return;
     }
 
-    if (!confirmationResult) {
+    if (!phoneNumber) {
       setError('Please request OTP first');
       return;
     }
@@ -96,14 +73,23 @@ export const PhoneAuth: React.FC = () => {
     setLoading(true);
 
     try {
-      await verifyOTP(confirmationResult, otp);
+      const { error } = await supabase.auth.verifyOtp({
+        phone: phoneNumber,
+        token: otp,
+        type: 'sms',
+      });
+
+      if (error) throw error;
+
       setSuccess('Phone number verified successfully!');
       setOtp('');
       setPhoneNumber('');
-      setConfirmationResult(null);
+      setOtpSent(false);
+      toast.success('Phone number verified successfully!');
     } catch (err: any) {
       console.error('Error verifying OTP:', err);
       setError(err.message || 'Invalid OTP. Please try again.');
+      toast.error(err.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -118,7 +104,7 @@ export const PhoneAuth: React.FC = () => {
         </CardHeader>
         <CardContent>
           <p className="text-sm mb-4">Phone: {user.phoneNumber}</p>
-          <p className="text-sm text-muted-foreground">User ID: {user.uid}</p>
+          <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
         </CardContent>
       </Card>
     );
@@ -129,14 +115,12 @@ export const PhoneAuth: React.FC = () => {
       <CardHeader>
         <CardTitle>Phone Authentication</CardTitle>
         <CardDescription>
-          {!confirmationResult
+          {!otpSent
             ? 'Enter your phone number to receive an OTP'
             : 'Enter the OTP sent to your phone'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div id="recaptcha-container"></div>
-
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{error}</AlertDescription>
@@ -149,7 +133,7 @@ export const PhoneAuth: React.FC = () => {
           </Alert>
         )}
 
-        {!confirmationResult ? (
+        {!otpSent ? (
           <form onSubmit={handleSendOTP} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
@@ -205,7 +189,7 @@ export const PhoneAuth: React.FC = () => {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setConfirmationResult(null);
+                  setOtpSent(false);
                   setOtp('');
                   setError('');
                   setSuccess('');
