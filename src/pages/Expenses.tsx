@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, TrendingUp, Calendar, DollarSign, PieChart, Download } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { exportFinancialDataToPDF } from '@/lib/pdfExport';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 
 /**
  * Predefined expense categories for consistent data organization
@@ -384,13 +385,13 @@ export default function Expenses() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Expenses</h1>
           
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             {/* Export expenses button */}
             <Button 
               variant="outline" 
               onClick={handleExportExpenses}
               disabled={exportingPDF || expenses.length === 0}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 touch-target w-full sm:w-auto text-sm sm:text-base"
             >
               <Download className="h-4 w-4" />
               {exportingPDF ? 'Exporting...' : 'Export PDF'}
@@ -399,7 +400,7 @@ export default function Expenses() {
             {/* Add expense dialog trigger */}
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="touch-target w-full sm:w-auto text-sm sm:text-base">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Expense
                   </Button>
@@ -463,54 +464,54 @@ export default function Expenses() {
         </div>
 
         {/* Analytics Dashboard */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Card className="touch-target">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold">KES {analytics.totalExpenses.toLocaleString()}</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Expenses</p>
+                  <p className="text-xl sm:text-2xl font-bold">KES {analytics.totalExpenses.toLocaleString()}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-muted-foreground" />
+                <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-6">
+          <Card className="touch-target">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">This Month</p>
-                  <p className="text-2xl font-bold">KES {analytics.monthlyTotal.toLocaleString()}</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">This Month</p>
+                  <p className="text-xl sm:text-2xl font-bold">KES {analytics.monthlyTotal.toLocaleString()}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-muted-foreground" />
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-6">
+          <Card className="touch-target">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Transactions</p>
-                  <p className="text-2xl font-bold">{analytics.totalTransactions}</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Transactions</p>
+                  <p className="text-xl sm:text-2xl font-bold">{analytics.totalTransactions}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-6">
+          <Card className="touch-target">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Top Category</p>
-                  <p className="text-lg font-bold">{analytics.topCategory?.name || 'None'}</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Top Category</p>
+                  <p className="text-base sm:text-lg font-bold">{analytics.topCategory?.name || 'None'}</p>
                   {analytics.topCategory && (
-                    <p className="text-sm text-muted-foreground">KES {analytics.topCategory.amount.toLocaleString()}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">KES {analytics.topCategory.amount.toLocaleString()}</p>
                   )}
                 </div>
-                <PieChart className="h-8 w-8 text-muted-foreground" />
+                <PieChart className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -520,9 +521,9 @@ export default function Expenses() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>All Expenses</CardTitle>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px] touch-target">
                     <SelectValue placeholder="Filter by date" />
                   </SelectTrigger>
                   <SelectContent>
@@ -534,7 +535,7 @@ export default function Expenses() {
                   </SelectContent>
                 </Select>
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px] touch-target">
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -548,50 +549,61 @@ export default function Expenses() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExpenses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No expenses found. Add your first expense to get started!
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredExpenses.map((expense) => (
-                      <TableRow key={expense.id}>
-                        <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                            {expense.category}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-medium">KES {parseFloat(expense.amount).toLocaleString()}</TableCell>
-                        <TableCell className="max-w-xs truncate">{expense.notes || '-'}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(expense.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            {filteredExpenses.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No expenses found. Add your first expense to get started!
+              </div>
+            ) : (
+              <ResponsiveTable
+                headers={['Date', 'Category', 'Amount', 'Notes', 'Actions']}
+                rows={filteredExpenses.map((expense) => [
+                  new Date(expense.date).toLocaleDateString(),
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    {expense.category}
+                  </span>,
+                  <span className="font-medium">KES {parseFloat(expense.amount).toLocaleString()}</span>,
+                  <span className="max-w-xs truncate">{expense.notes || '-'}</span>,
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(expense.id)}
+                    className="touch-target"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                ])}
+                mobileCard={(row, index) => {
+                  const expense = filteredExpenses[index];
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-base">KES {parseFloat(expense.amount).toLocaleString()}</div>
+                          <div className="text-sm text-muted-foreground">{new Date(expense.date).toLocaleDateString()}</div>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          {expense.category}
+                        </span>
+                      </div>
+                      {expense.notes && (
+                        <div className="text-sm text-muted-foreground">
+                          {expense.notes}
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(expense.id)}
+                        className="w-full touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  );
+                }}
+              />
+            )}
           </CardContent>
         </Card>
       </main>
