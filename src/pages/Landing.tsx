@@ -4,6 +4,7 @@ import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { CircleDollarSign, TrendingUp, PieChart, Target, Shield, Smartphone, ArrowRight, CheckCircle, BarChart3, CreditCard } from 'lucide-react';
 
 export default function Landing() {
@@ -51,6 +52,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <ThemeToggle />
             <Link to="/auth">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
