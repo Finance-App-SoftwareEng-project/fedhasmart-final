@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { CircleDollarSign, TrendingUp, PieChart, Target, Shield, Smartphone, ArrowRight, CheckCircle, BarChart3, CreditCard } from 'lucide-react';
+import { CircleDollarSign, TrendingUp, PieChart, Target, Shield, Smartphone, ArrowRight, CheckCircle, BarChart3, CreditCard, Sparkles } from 'lucide-react';
 
 export default function Landing() {
   const { user, loading } = useUnifiedAuth();
@@ -66,8 +66,9 @@ export default function Landing() {
       {/* Hero Section */}
       <section className={`py-12 sm:py-16 md:py-20 px-3 sm:px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="container mx-auto text-center max-w-4xl">
-          <Badge variant="secondary" className="mb-4 sm:mb-6 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
-            🚀 Your Personal Finance Companion
+          <Badge variant="secondary" className="mb-4 sm:mb-6 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm inline-flex items-center gap-2">
+            <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+            Your Personal Finance Companion
           </Badge>
           
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent leading-tight">
