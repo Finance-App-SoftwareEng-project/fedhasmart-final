@@ -433,7 +433,7 @@ export default function Dashboard() {
               {displayName ? `${displayName}'s Dashboard` : 'Dashboard'}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-              Welcome back! Here's your financial overview.
+              Welcome back{displayName ? `, ${displayName}` : ''}! Here's your financial overview.
             </p>
           </div>
           <Button 
