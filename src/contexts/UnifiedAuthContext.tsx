@@ -62,9 +62,21 @@ export const UnifiedAuthProvider = ({ children }: { children: React.ReactNode })
         setUser(unifiedUser);
         setLoading(false);
 
-        // Auto-navigate on sign in if we're on the auth page
-        if (event === 'SIGNED_IN' && session?.user && window.location.pathname === '/auth') {
-          navigate('/dashboard');
+        // Handle different auth events
+        if (event === 'SIGNED_IN' && session?.user) {
+          if (window.location.pathname === '/auth') {
+            navigate('/dashboard');
+          }
+          
+          // Show welcome message for confirmed users
+          if (session.user.email_confirmed_at) {
+            toast.success('Welcome back! You are now signed in.');
+          }
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          // Handle email confirmation
+          if (session.user.email_confirmed_at) {
+            toast.success('✅ Email confirmed! Your account is now fully activated.');
+          }
         }
       }
     );

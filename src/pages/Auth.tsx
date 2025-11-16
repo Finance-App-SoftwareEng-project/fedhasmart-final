@@ -30,7 +30,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -43,7 +43,17 @@ export default function Auth() {
 
       if (error) throw error;
 
-      toast.success('Account created! You can now log in.');
+      if (data.user && !data.session) {
+        // Email confirmation required
+        toast.success(
+          '🎉 Account created successfully! Please check your email and click the confirmation link to activate your account.',
+          { duration: 8000 }
+        );
+      } else {
+        // Auto sign-in (if email confirmation is disabled)
+        toast.success('Account created! You can now log in.');
+      }
+      
       setEmail('');
       setPassword('');
       setPhone('');
