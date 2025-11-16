@@ -311,18 +311,30 @@ export default function Expenses() {
     return categoryMatch && dateMatch;
   });
 
+  // Render loading state while authentication is being determined
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  // Return null if user is not authenticated (will be redirected by useEffect)
   if (!user) return null;
 
+  /**
+   * Main component render
+   * Structured layout with navigation, analytics dashboard, and expense management
+   */
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation component for consistent app navigation */}
       <Navbar />
+      
+      {/* Main content area with responsive padding for mobile and desktop */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
+        {/* Page header with title and primary action button */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Expenses</h1>
+          
+          {/* Add expense dialog trigger */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
