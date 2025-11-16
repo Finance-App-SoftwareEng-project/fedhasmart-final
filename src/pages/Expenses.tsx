@@ -264,29 +264,50 @@ export default function Expenses() {
     }
   };
 
-  const getDateRangeFilter = (expense: any) => {
+  /**
+   * Advanced date range filtering function
+   * Provides flexible time-based filtering for expense analysis
+   * @param expense - Individual expense object to filter
+   * @returns boolean indicating if expense matches selected date range
+   */
+  const getDateRangeFilter = (expense: any): boolean => {
     const expenseDate = new Date(expense.date);
     const now = new Date();
     
     switch (dateRange) {
       case 'today':
+        // Match expenses from today only
         return expenseDate.toDateString() === now.toDateString();
       case 'week':
+        // Match expenses from the last 7 days
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         return expenseDate >= weekAgo;
       case 'month':
+        // Match expenses from current month and year
         return expenseDate.getMonth() === now.getMonth() && 
                expenseDate.getFullYear() === now.getFullYear();
       case 'year':
+        // Match expenses from current year
         return expenseDate.getFullYear() === now.getFullYear();
       default:
+        // 'all' case - show all expenses regardless of date
         return true;
     }
   };
 
+  /**
+   * Apply multiple filters to expenses for enhanced user experience
+   * Combines category and date range filtering for precise expense viewing
+   * Users can filter by both category and time period simultaneously
+   */
   const filteredExpenses = expenses.filter((exp) => {
+    // Check if expense matches selected category (or show all categories)
     const categoryMatch = filterCategory === 'all' || exp.category === filterCategory;
+    
+    // Check if expense matches selected date range
     const dateMatch = getDateRangeFilter(exp);
+    
+    // Expense must match both filters to be displayed
     return categoryMatch && dateMatch;
   });
 
