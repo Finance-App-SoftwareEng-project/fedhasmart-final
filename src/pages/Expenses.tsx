@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Calendar, DollarSign, PieChart } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Other'];
@@ -33,6 +33,37 @@ export default function Expenses() {
     date: new Date().toISOString().split('T')[0],
     notes: '',
   });
+
+  // Calculate expense analytics
+  const getExpenseAnalytics = () => {
+    const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+    const thisMonth = new Date().getMonth();
+    const thisYear = new Date().getFullYear();
+    
+    const monthlyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === thisMonth && expenseDate.getFullYear() === thisYear;
+    });
+    
+    const monthlyTotal = monthlyExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+    
+    const categoryTotals = expenses.reduce((acc, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + parseFloat(expense.amount);
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topCategory = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number))[0];
+    
+    return {
+      totalExpenses,
+      monthlyTotal,
+      totalTransactions: expenses.length,
+      topCategory: topCategory ? { name: topCategory[0], amount: topCategory[1] } : null,
+      categoryTotals
+    };
+  };
+
+  const analytics = getExpenseAnalytics();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -171,6 +202,60 @@ export default function Expenses() {
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Analytics Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
+                  <p className="text-2xl font-bold">KES {analytics.totalExpenses.toLocaleString()}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">This Month</p>
+                  <p className="text-2xl font-bold">KES {analytics.monthlyTotal.toLocaleString()}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Transactions</p>
+                  <p className="text-2xl font-bold">{analytics.totalTransactions}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Top Category</p>
+                  <p className="text-lg font-bold">{analytics.topCategory?.name || 'None'}</p>
+                  {analytics.topCategory && (
+                    <p className="text-sm text-muted-foreground">KES {analytics.topCategory.amount.toLocaleString()}</p>
+                  )}
+                </div>
+                <PieChart className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
