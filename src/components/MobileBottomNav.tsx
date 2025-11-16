@@ -1,15 +1,33 @@
+/**
+ * Mobile Bottom Navigation Component
+ * 
+ * Provides a fixed bottom navigation bar for mobile devices.
+ * Only visible on mobile screens (hidden on desktop via Tailwind md:hidden).
+ * 
+ * Features:
+ * - Quick navigation to main app sections
+ * - Active route highlighting
+ * - Responsive design (hidden on desktop)
+ * - Conditional rendering (hidden on auth/landing pages)
+ */
+
 import { Link, useLocation } from 'react-router-dom';
 import { Home, DollarSign, TrendingUp, Wallet, Target, User } from 'lucide-react';
 
 export const MobileBottomNav = () => {
   const location = useLocation();
 
-  // Hide bottom nav on auth pages
+  // Hide bottom navigation on authentication and landing pages
+  // These pages don't need navigation as users aren't logged in yet
   const hideOnPages = ['/auth', '/phone-auth', '/'];
   if (hideOnPages.includes(location.pathname)) {
     return null;
   }
 
+  /**
+   * Navigation items configuration
+   * Defines the main app sections accessible from the bottom nav
+   */
   const navItems = [
     { path: '/dashboard', label: 'Home', icon: Home },
     { path: '/income', label: 'Income', icon: DollarSign },
