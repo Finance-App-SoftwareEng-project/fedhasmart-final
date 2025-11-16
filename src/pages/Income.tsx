@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Navbar } from "@/components/Navbar";
 
+// Income table row structure
 interface Income {
   id: string;
   amount: number;
@@ -30,6 +31,7 @@ interface Income {
 
 const INCOME_SOURCES = ["Salary", "Freelance", "Business", "Investment", "Gift", "Other"];
 
+// Component: Income
 export default function Income() {
   const { user: supabaseUser } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
