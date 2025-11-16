@@ -141,62 +141,126 @@ export default function Expenses() {
   // Generate analytics data for dashboard display
   const analytics = getExpenseAnalytics();
 
+  /**
+   * Authentication effect hook
+   * Redirects users to authentication page if not logged in
+   * Runs when authentication state changes
+   */
   useEffect(() => {
+    // Only redirect after auth loading is complete to avoid premature redirects
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  /**
+   * Data loading effect hook
+   * Triggers expense data loading when user authentication is confirmed
+   * Ensures data is only loaded for authenticated users
+   */
   useEffect(() => {
     if (user) {
       loadExpenses();
     }
   }, [user]);
 
-  const loadExpenses = async () => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .order('date', { ascending: false });
+  /**
+   * Load all expenses from the database for the current user
+   * Fetches expenses ordered by date (most recent first) for better UX
+   * Handles error states with user-friendly toast notifications
+   */
+  const loadExpenses = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false }); // Most recent expenses first
 
-    if (error) {
-      toast.error('Failed to load expenses');
-    } else {
-      setExpenses(data || []);
+      if (error) {
+        console.error('Database error loading expenses:', error);
+        toast.error('Failed to load expenses');
+      } else {
+        // Ensure we always have an array, even if data is null
+        setExpenses(data || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error loading expenses:', err);
+      toast.error('An unexpected error occurred while loading expenses');
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Handle form submission for adding new expenses
+   * Validates user authentication, processes form data, and updates the database
+   * @param e - React form event to prevent default submission behavior
+   */
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault(); // Prevent default form submission
 
-    if (!user) return;
+    // Ensure user is authenticated before proceeding
+    if (!user) {
+      toast.error('You must be logged in to add expenses');
+      return;
+    }
 
-    const { error } = await supabase.from('expenses').insert({
-      user_id: user.id,
-      amount: parseFloat(formData.amount),
-      category: formData.category,
-      date: formData.date,
-      notes: formData.notes || null,
-    });
+    try {
+      // Insert new expense into database with user association
+      const { error } = await supabase.from('expenses').insert({
+        user_id: user.id, // Associate expense with current user
+        amount: parseFloat(formData.amount), // Convert string to number for calculations
+        category: formData.category,
+        date: formData.date,
+        notes: formData.notes || null, // Handle empty notes gracefully
+      });
 
-    if (error) {
-      toast.error('Failed to add expense');
-    } else {
-      toast.success('Expense added successfully');
-      setFormData({ amount: '', category: '', date: new Date().toISOString().split('T')[0], notes: '' });
-      setOpen(false);
-      loadExpenses();
+      if (error) {
+        console.error('Database error adding expense:', error);
+        toast.error('Failed to add expense');
+      } else {
+        // Success flow: notify user, reset form, close dialog, refresh data
+        toast.success('Expense added successfully');
+        
+        // Reset form to initial state for next entry
+        setFormData({ 
+          amount: '', 
+          category: '', 
+          date: new Date().toISOString().split('T')[0], // Reset to current date
+          notes: '' 
+        });
+        
+        setOpen(false); // Close the add expense dialog
+        loadExpenses(); // Refresh expenses list to show new entry
+      }
+    } catch (err) {
+      console.error('Unexpected error adding expense:', err);
+      toast.error('An unexpected error occurred while adding the expense');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
+  /**
+   * Handle expense deletion with confirmation
+   * Removes expense from database and refreshes the expense list
+   * @param id - Unique identifier of the expense to delete
+   */
+  const handleDelete = async (id: string): Promise<void> => {
+    try {
+      // Delete expense from database by ID
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
 
-    if (error) {
-      toast.error('Failed to delete expense');
-    } else {
-      toast.success('Expense deleted');
-      loadExpenses();
+      if (error) {
+        console.error('Database error deleting expense:', error);
+        toast.error('Failed to delete expense');
+      } else {
+        // Success: notify user and refresh data
+        toast.success('Expense deleted successfully');
+        loadExpenses(); // Refresh expenses list to reflect deletion
+      }
+    } catch (err) {
+      console.error('Unexpected error deleting expense:', err);
+      toast.error('An unexpected error occurred while deleting the expense');
     }
   };
 
