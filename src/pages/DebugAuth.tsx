@@ -1,21 +1,19 @@
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
-import { useFirebaseAuth } from '@/contexts/FirebaseAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DebugAuth() {
   const unified = useUnifiedAuth();
-  const firebase = useFirebaseAuth();
   const supabase = useAuth();
 
   return (
     <div className="min-h-screen bg-background p-8">
       <h1 className="text-3xl font-bold mb-6">Authentication Debug</h1>
       
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Unified Auth</CardTitle>
+            <CardTitle>Unified Auth (Supabase-based)</CardTitle>
           </CardHeader>
           <CardContent>
             <pre className="text-xs overflow-auto">
@@ -26,6 +24,12 @@ export default function DebugAuth() {
                   phoneNumber: unified.user.phoneNumber,
                   emailVerified: unified.user.emailVerified,
                   phoneVerified: unified.user.phoneVerified,
+                  displayName: unified.user.displayName,
+                  avatarUrl: unified.user.avatarUrl,
+                } : null,
+                session: unified.session ? {
+                  access_token: unified.session.access_token ? '***' : null,
+                  user_id: unified.session.user.id,
                 } : null,
                 loading: unified.loading,
               }, null, 2)}
@@ -35,25 +39,7 @@ export default function DebugAuth() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Firebase Auth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify({
-                user: firebase.user ? {
-                  uid: firebase.user.uid,
-                  phoneNumber: firebase.user.phoneNumber,
-                  email: firebase.user.email,
-                } : null,
-                loading: firebase.loading,
-              }, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Supabase Auth</CardTitle>
+            <CardTitle>Supabase Auth (Raw)</CardTitle>
           </CardHeader>
           <CardContent>
             <pre className="text-xs overflow-auto">
@@ -61,6 +47,10 @@ export default function DebugAuth() {
                 user: supabase.user ? {
                   id: supabase.user.id,
                   email: supabase.user.email,
+                  phone: supabase.user.phone,
+                  email_confirmed_at: supabase.user.email_confirmed_at,
+                  phone_confirmed_at: supabase.user.phone_confirmed_at,
+                  user_metadata: supabase.user.user_metadata,
                 } : null,
                 loading: supabase.loading,
               }, null, 2)}

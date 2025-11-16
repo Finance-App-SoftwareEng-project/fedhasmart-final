@@ -1,3 +1,16 @@
+/**
+ * Goals Page Component
+ * 
+ * Provides savings goals management functionality:
+ * - Create savings goals with target amounts and deadlines
+ * - Track progress toward goals with visual progress bars
+ * - Add contributions to goals
+ * - Milestone tracking (25%, 50%, 75%, 100%)
+ * - Visual indicators for completed goals
+ * 
+ * Helps users set and achieve financial savings targets.
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,11 +28,12 @@ import { Plus, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Goals() {
+  // Authentication hooks - support both auth systems
   const { user: supabaseUser, loading: authLoading } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  // Prioritize unified user, fall back to Supabase user
   const user = unifiedUser || supabaseUser;
   const [goals, setGoals] = useState<any[]>([]);
   const [openGoal, setOpenGoal] = useState(false);

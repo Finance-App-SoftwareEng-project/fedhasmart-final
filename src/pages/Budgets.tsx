@@ -1,3 +1,16 @@
+/**
+ * Budgets Page Component
+ * 
+ * Provides budget management functionality:
+ * - Create budgets for categories (weekly or monthly)
+ * - View budget progress with visual indicators
+ * - Track spending against budget limits
+ * - Receive alerts when approaching or exceeding budgets
+ * - Export budget data to PDF
+ * 
+ * Supports both weekly and monthly budget periods.
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,14 +29,19 @@ import { Plus, AlertCircle, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
+/**
+ * Budget categories
+ * Categories that can have budgets assigned
+ */
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Other'];
 
 export default function Budgets() {
+  // Authentication hooks - support both auth systems
   const { user: supabaseUser, loading: authLoading } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  // Prioritize unified user, fall back to Supabase user
   const user = unifiedUser || supabaseUser;
   const [budgets, setBudgets] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
