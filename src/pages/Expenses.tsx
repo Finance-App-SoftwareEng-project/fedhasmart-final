@@ -1,3 +1,15 @@
+/**
+ * Expenses Page Component
+ * 
+ * This component provides a comprehensive expense management interface for users.
+ * Features include:
+ * - Adding new expenses with categorization
+ * - Viewing expense analytics and summaries
+ * - Filtering expenses by category and date range
+ * - Deleting existing expenses
+ * - Real-time expense tracking and calculations
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +27,32 @@ import { toast } from 'sonner';
 import { Plus, Trash2, TrendingUp, Calendar, DollarSign, PieChart } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 
+/**
+ * Predefined expense categories for consistent data organization
+ * These categories help users classify their expenses for better tracking
+ */
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Other'];
+
+/**
+ * Interface for expense form data structure
+ */
+interface ExpenseFormData {
+  amount: string;
+  category: string;
+  date: string;
+  notes: string;
+}
+
+/**
+ * Interface for expense analytics data
+ */
+interface ExpenseAnalytics {
+  totalExpenses: number;
+  monthlyTotal: number;
+  totalTransactions: number;
+  topCategory: { name: string; amount: number } | null;
+  categoryTotals: Record<string, number>;
+}
 
 export default function Expenses() {
   const { user: supabaseUser, loading: authLoading } = useAuth();
