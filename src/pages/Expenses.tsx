@@ -24,8 +24,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, TrendingUp, Calendar, DollarSign, PieChart } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Calendar, DollarSign, PieChart, Download } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 /**
  * Predefined expense categories for consistent data organization
@@ -77,6 +78,7 @@ export default function Expenses() {
   // Filtering state for enhanced user experience
   const [filterCategory, setFilterCategory] = useState('all'); // Category-based filtering
   const [dateRange, setDateRange] = useState('all'); // Time-based filtering
+  const [exportingPDF, setExportingPDF] = useState(false); // PDF export loading state
   
   /**
    * Form state for adding new expenses
@@ -311,6 +313,55 @@ export default function Expenses() {
     return categoryMatch && dateMatch;
   });
 
+  /**
+   * Handle PDF export for expenses with current filters applied
+   * Exports filtered expense data based on user's selected criteria
+   */
+  const handleExportExpenses = async (): Promise<void> => {
+    if (!user) {
+      toast.error('You must be logged in to export expenses');
+      return;
+    }
+
+    setExportingPDF(true);
+    try {
+      // Convert current date range filter to export format
+      let dateRangeFilter;
+      if (dateRange !== 'all') {
+        const now = new Date();
+        const from = new Date();
+        
+        switch (dateRange) {
+          case 'today':
+            from.setDate(now.getDate());
+            break;
+          case 'week':
+            from.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            from.setMonth(now.getMonth() - 1);
+            break;
+          case 'year':
+            from.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        
+        dateRangeFilter = {
+          from: from.toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
+        };
+      }
+
+      await exportFinancialDataToPDF(user.id, 'expenses', dateRangeFilter);
+      toast.success('Expenses exported to PDF successfully!');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export expenses');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   // Render loading state while authentication is being determined
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -330,18 +381,30 @@ export default function Expenses() {
       
       {/* Main content area with responsive padding for mobile and desktop */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
-        {/* Page header with title and primary action button */}
-        <div className="flex justify-between items-center mb-8">
+        {/* Page header with title and action buttons */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Expenses</h1>
           
-          {/* Add expense dialog trigger */}
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Expense
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            {/* Export expenses button */}
+            <Button 
+              variant="outline" 
+              onClick={handleExportExpenses}
+              disabled={exportingPDF || expenses.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exportingPDF ? 'Exporting...' : 'Export PDF'}
+            </Button>
+            
+            {/* Add expense dialog trigger */}
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Expense
+                  </Button>
+                </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Expense</DialogTitle>
@@ -396,7 +459,8 @@ export default function Expenses() {
                 <Button type="submit" className="w-full">Add Expense</Button>
               </form>
             </DialogContent>
-          </Dialog>
+              </Dialog>
+            </div>
         </div>
 
         {/* Analytics Dashboard */}

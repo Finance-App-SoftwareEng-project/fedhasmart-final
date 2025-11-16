@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, Download, Plus } from "lucide-react";
+import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ export default function Income() {
   const { toast } = useToast();
   const [income, setIncome] = useState<Income[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [newIncome, setNewIncome] = useState({
     amount: "",
     source: "",
@@ -132,11 +134,50 @@ export default function Income() {
     }
   };
 
+  const handleExportIncome = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to export income data",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setExportingPDF(true);
+    try {
+      await exportFinancialDataToPDF(user.id, 'income');
+      toast({
+        title: "Success",
+        description: "Income data exported to PDF successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to export income data",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   return (
     <>
       <Navbar />
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8">Income Tracker</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">Income Tracker</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleExportIncome}
+            disabled={exportingPDF || income.length === 0}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {exportingPDF ? 'Exporting...' : 'Export PDF'}
+          </Button>
+        </div>
 
       <div className="grid gap-4 sm:gap-8 md:grid-cols-2">
         <Card>
