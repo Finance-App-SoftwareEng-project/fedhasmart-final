@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -381,7 +382,7 @@ export default function UserProfile() {
         <Alert className="mt-4 sm:mt-6">
           <AlertDescription className="text-xs sm:text-sm">
             <strong>Note:</strong> To update your phone number or other security settings, 
-            please visit the <a href="/settings" className="underline text-primary">Settings</a> page.
+            please visit the <Link to="/settings" className="underline text-primary hover:text-primary/80">Settings</Link> page.
           </AlertDescription>
         </Alert>
       </div>
