@@ -32,7 +32,7 @@ export default function UserProfile() {
 
   const loadProfile = async () => {
     if (!user?.supabaseUser?.id) {
-      // For Firebase-only users, use basic info
+      // Fallback for users without Supabase profile
       setDisplayName(user?.displayName || '');
       setAvatarUrl(user?.avatarUrl || '');
       return;

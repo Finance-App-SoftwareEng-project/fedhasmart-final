@@ -1,3 +1,15 @@
+/**
+ * Dashboard Component
+ * 
+ * Main dashboard page displaying comprehensive financial overview including:
+ * - Financial statistics (income, expenses, net balance, savings)
+ * - Expense category breakdown (pie chart)
+ * - Spending trends over time (line chart with daily/weekly/monthly views)
+ * - Budget tracking and remaining budget calculations
+ * - Financial health indicators
+ * - PDF export functionality
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,43 +20,66 @@ import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { CreditCard, TrendingUp, Activity, ArrowUpCircle, PiggyBank, Calculator, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 export default function Dashboard() {
+  // Authentication hooks - support both auth systems for flexibility
   const { user: supabaseUser, loading: authLoading } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  // Prioritize unified user, fall back to Supabase user if needed
+  // This allows the component to work with either authentication system
   const user = unifiedUser || supabaseUser;
+  // Dashboard state management
   const [stats, setStats] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    remainingBudget: 0,
-    savingsProgress: 0,
-    totalContributions: 0,
-    goalCount: 0,
-    netBalance: 0,
-    savingsRate: 0,
+    totalIncome: 0, // Total income for current month
+    totalExpenses: 0, // Total expenses for current month
+    remainingBudget: 0, // Remaining budget after expenses
+    savingsProgress: 0, // Total saved across all goals
+    totalContributions: 0, // Contributions made this month
+    goalCount: 0, // Number of active savings goals
+    netBalance: 0, // Income - Expenses - Contributions
+    savingsRate: 0, // Percentage of income saved
   });
-  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
-  const [displayName, setDisplayName] = useState<string>('');
-  const [exportingPDF, setExportingPDF] = useState(false);
+  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]); // Category breakdown for pie chart
+  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]); // Historical spending data for line chart
+  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly'); // Chart time period
+  const [displayName, setDisplayName] = useState<string>(''); // User's display name for greeting
+  const [exportingPDF, setExportingPDF] = useState(false); // PDF export loading state
 
+  // Redirect to auth if user is not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  // Load user profile and dashboard data when user is authenticated
   useEffect(() => {
     if (user) {
       loadUserProfile();
       loadDashboardData();
     }
   }, [user]);
+
+  // Reload time series data when time period changes
+  useEffect(() => {
+    if (user) {
+      // Extract user ID - handles both unified and Supabase user formats
+      const userId = 'supabaseUser' in user && user.supabaseUser?.id 
+        ? user.supabaseUser.id 
+        : 'id' in user 
+        ? user.id 
+        : null;
+      
+      if (userId) {
+        loadTimeSeriesData(timePeriod, userId);
+      }
+    }
+  }, [timePeriod, user]);
 
   const loadUserProfile = async () => {
     // Try to get display name from unified user first
@@ -77,8 +112,149 @@ export default function Dashboard() {
     }
   };
 
+  /**
+   * Load time series data for spending trends chart
+   * 
+   * Fetches historical expense data and groups it by the selected time period.
+   * Supports daily, weekly, and monthly views with appropriate date ranges.
+   * 
+   * @param period - Time period for grouping (daily, weekly, monthly)
+   * @param userId - User ID to fetch data for
+   */
+  const loadTimeSeriesData = async (period: 'daily' | 'weekly' | 'monthly', userId: string) => {
+    try {
+      let startDate: Date;
+      let groupBy: string;
+      let limit: number;
+
+      // Configure date range and data grouping based on selected period
+      // Each period shows a different amount of historical data
+      switch (period) {
+        case 'daily':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - 30); // Last 30 days for daily view
+          groupBy = 'day';
+          limit = 30;
+          break;
+        case 'weekly':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - (12 * 7)); // Last 12 weeks for weekly view
+          groupBy = 'week';
+          limit = 12;
+          break;
+        case 'monthly':
+        default:
+          startDate = new Date();
+          startDate.setMonth(startDate.getMonth() - 6); // Last 6 months for monthly view
+          groupBy = 'month';
+          limit = 6;
+          break;
+      }
+
+      const { data: historicalExpenses } = await supabase
+        .from('expenses')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      // Group data based on selected period
+      const dataMap = new Map();
+      
+      historicalExpenses?.forEach((exp) => {
+        let key: string;
+        let formattedLabel: string;
+        const expDate = new Date(exp.date);
+
+        switch (period) {
+          case 'daily':
+            key = exp.date; // YYYY-MM-DD
+            formattedLabel = expDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'weekly':
+            // Get week start (Monday)
+            const weekStart = new Date(expDate);
+            const dayOfWeek = weekStart.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            weekStart.setDate(weekStart.getDate() - daysToMonday);
+            key = weekStart.toISOString().split('T')[0];
+            formattedLabel = weekStart.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'monthly':
+          default:
+            key = exp.date.substring(0, 7); // YYYY-MM
+            const monthDate = new Date(key + '-01');
+            formattedLabel = monthDate.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            });
+            break;
+        }
+
+        const current = dataMap.get(key) || 0;
+        dataMap.set(key, current + Number(exp.amount));
+      });
+
+      // Convert to array and sort
+      const timeSeriesArray = Array.from(dataMap.entries()).map(([key, amount]) => {
+        let formattedLabel: string;
+        
+        switch (period) {
+          case 'daily':
+            const dayDate = new Date(key);
+            formattedLabel = dayDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'weekly':
+            const weekDate = new Date(key);
+            formattedLabel = `Week of ${weekDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            })}`;
+            break;
+          case 'monthly':
+          default:
+            const monthDate = new Date(key + '-01');
+            formattedLabel = monthDate.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            });
+            break;
+        }
+
+        return {
+          period: formattedLabel,
+          rawPeriod: key,
+          amount,
+        };
+      }).sort((a, b) => a.rawPeriod.localeCompare(b.rawPeriod));
+
+      setTimeSeriesData(timeSeriesArray);
+    } catch (error) {
+      console.error('Error loading time series data:', error);
+    }
+  };
+
+  /**
+   * Load all dashboard data
+   * 
+   * Fetches and calculates comprehensive financial statistics including:
+   * - Monthly income and expenses
+   * - Budget tracking and remaining budget
+   * - Savings goals progress
+   * - Financial health metrics (net balance, savings rate)
+   * - Expense category breakdown
+   */
   const loadDashboardData = async () => {
-    // Use the appropriate user ID based on account type
+    // Extract user ID - handles both unified and Supabase user formats
     const userId = 'supabaseUser' in user && user.supabaseUser?.id 
       ? user.supabaseUser.id 
       : 'id' in user 
@@ -88,41 +264,45 @@ export default function Dashboard() {
     if (!userId) return;
 
     try {
-      // Get total expenses for current month
+      // Calculate start of current month for filtering
       const currentMonth = new Date();
-      currentMonth.setDate(1);
+      currentMonth.setDate(1); // Set to first day of month
       
+      // Fetch expenses for current month
       const { data: expenses } = await supabase
         .from('expenses')
         .select('amount, category, date')
         .eq('user_id', userId)
-        .gte('date', currentMonth.toISOString().split('T')[0]);
+        .gte('date', currentMonth.toISOString().split('T')[0]); // From start of month
 
+      // Calculate total expenses for current month
       const totalExpenses = expenses?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0;
 
-      // Get total income for current month
+      // Fetch income for current month
       const { data: income } = await supabase
         .from('income')
         .select('amount')
-        .gte('date', currentMonth.toISOString().split('T')[0]);
+        .gte('date', currentMonth.toISOString().split('T')[0]); // From start of month
 
+      // Calculate total income for current month
       const totalIncome = income?.reduce((sum, inc) => sum + Number(inc.amount), 0) || 0;
 
-      // Get budgets (both monthly and weekly for current period)
+      // Calculate current week start (Monday) for weekly budget filtering
       const currentWeekStart = new Date();
       currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
       currentWeekStart.setHours(0, 0, 0, 0);
 
+      // Fetch all budgets
       const { data: budgets } = await supabase
         .from('budgets')
         .select('limit_amount, spent_amount, period, month, category');
 
-      // Filter budgets for current month or current week
+      // Filter budgets to only show active ones (current month or current week)
       const currentMonthStr = currentMonth.toISOString().substring(0, 7); // e.g., "2025-10"
       
       const activeBudgets = budgets?.filter(b => {
         if (b.period === 'weekly') {
-          // For weekly budgets, check if the budget's start date is within the current week
+          // For weekly budgets, check if budget's start date falls within current week
           const budgetDate = new Date(b.month);
           const weekEnd = new Date(currentWeekStart);
           weekEnd.setDate(weekEnd.getDate() + 7);
@@ -134,15 +314,18 @@ export default function Dashboard() {
         }
       }) || [];
 
+      // Calculate total budget limit across all active budgets
       const totalBudget = activeBudgets.reduce((sum, b) => sum + Number(b.limit_amount), 0);
       
-      // Calculate expenses that fall within budgeted categories for the current period
+      // Calculate how much was spent on budgeted categories
+      // Only count expenses in categories that have active budgets
       const budgetedCategories = activeBudgets.map(b => b.category);
       const budgetedExpenses = expenses?.filter(exp => 
         budgetedCategories.includes(exp.category)
       ) || [];
       const spentOnBudgetedCategories = budgetedExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
       
+      // Calculate remaining budget (total budget - spent on budgeted categories)
       const remainingBudget = totalBudget - spentOnBudgetedCategories;
 
       // Get goals
@@ -185,28 +368,8 @@ export default function Dashboard() {
       }));
       setExpensesByCategory(categoryData);
 
-      // Get last 6 months expenses
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-      const { data: historicalExpenses } = await supabase
-        .from('expenses')
-        .select('amount, date')
-        .gte('date', sixMonthsAgo.toISOString().split('T')[0])
-        .order('date', { ascending: true });
-
-      const monthlyMap = new Map();
-      historicalExpenses?.forEach((exp) => {
-        const month = exp.date.substring(0, 7);
-        const current = monthlyMap.get(month) || 0;
-        monthlyMap.set(month, current + Number(exp.amount));
-      });
-
-      const monthlyData = Array.from(monthlyMap.entries()).map(([month, amount]) => ({
-        month,
-        amount,
-      }));
-      setMonthlyExpenses(monthlyData);
+      // Load time series data based on selected period
+      await loadTimeSeriesData(timePeriod, userId);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
@@ -232,6 +395,17 @@ export default function Dashboard() {
 
   const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
+  /**
+   * Calculate financial health status based on savings rate
+   * 
+   * Categorizes financial health into four levels:
+   * - Excellent: 80%+ savings rate
+   * - Good: 60-79% savings rate
+   * - Fair: 40-59% savings rate
+   * - Poor: <40% savings rate
+   * 
+   * @returns Object with health label and color class
+   */
   const getHealthStatus = () => {
     if (stats.savingsRate >= 80) return { label: "Excellent", color: "text-success" };
     if (stats.savingsRate >= 60) return { label: "Good", color: "text-primary" };
@@ -399,28 +573,76 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Monthly Spending Trend</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base sm:text-lg">Spending Trend</CardTitle>
+                <div className="flex gap-1">
+                  <Badge 
+                    variant={timePeriod === 'daily' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('daily')}
+                  >
+                    Daily
+                  </Badge>
+                  <Badge 
+                    variant={timePeriod === 'weekly' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('weekly')}
+                  >
+                    Weekly
+                  </Badge>
+                  <Badge 
+                    variant={timePeriod === 'monthly' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('monthly')}
+                  >
+                    Monthly
+                  </Badge>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              {monthlyExpenses.length > 0 ? (
+              {timeSeriesData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={monthlyExpenses}>
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                  <LineChart 
+                    data={timeSeriesData} 
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <XAxis 
+                      dataKey="period" 
+                      tick={{ fontSize: 10 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      interval={timePeriod === 'daily' ? 'preserveStartEnd' : 0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Spending']}
+                      labelFormatter={(label) => `${timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}: ${label}`}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                      }}
+                    />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line
                       type="monotone"
                       dataKey="amount"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       name="Spending"
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
-                  No historical data available
+                  No historical data available for {timePeriod} view
                 </div>
               )}
             </CardContent>
