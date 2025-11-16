@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Trash2, UserX, Loader2, Pencil, X } from 'lucide-react';
+import { Trash2, UserX, Loader2, Pencil, X, Download, FileText, Calendar } from 'lucide-react';
+import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 export default function Settings() {
   const { user: supabaseUser } = useAuth();
@@ -23,6 +25,9 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState('');
   const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportType, setExportType] = useState<'expenses' | 'income' | 'budgets' | 'all'>('all');
+  const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'year' | 'all'>('all');
 
   useEffect(() => {
     if (!user) {
@@ -76,6 +81,45 @@ export default function Settings() {
   const handleCancelEdit = () => {
     setIsEditingPhone(false);
     loadProfile();
+  };
+
+  const handleExportToPDF = async () => {
+    if (!user) return;
+
+    setExporting(true);
+    try {
+      let dateRangeFilter;
+      
+      if (dateRange !== 'all') {
+        const now = new Date();
+        const from = new Date();
+        
+        switch (dateRange) {
+          case 'month':
+            from.setMonth(now.getMonth() - 1);
+            break;
+          case 'quarter':
+            from.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            from.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+        
+        dateRangeFilter = {
+          from: from.toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
+        };
+      }
+
+      await exportFinancialDataToPDF(user.id, exportType, dateRangeFilter);
+      toast.success('Financial report exported successfully!');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export financial data');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -155,6 +199,106 @@ export default function Settings() {
                     <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US)</p>
                   </>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Export Financial Data
+              </CardTitle>
+              <CardDescription>
+                Download your financial data as a PDF report for record keeping or sharing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="export-type">Data to Export</Label>
+                  <Select value={exportType} onValueChange={(value: any) => setExportType(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select data type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Financial Data</SelectItem>
+                      <SelectItem value="expenses">Expenses Only</SelectItem>
+                      <SelectItem value="income">Income Only</SelectItem>
+                      <SelectItem value="budgets">Budgets Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date-range">Time Period</Label>
+                  <Select value={dateRange} onValueChange={(value: any) => setDateRange(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="month">Last Month</SelectItem>
+                      <SelectItem value="quarter">Last 3 Months</SelectItem>
+                      <SelectItem value="year">Last Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  onClick={handleExportToPDF} 
+                  disabled={exporting}
+                  className="flex items-center gap-2"
+                >
+                  {exporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {exporting ? 'Generating PDF...' : 'Export to PDF'}
+                </Button>
+                
+                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-2 sm:mt-0 sm:ml-4">
+                  <Calendar className="h-4 w-4" />
+                  Export includes formatted tables and summaries
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md">
+                <strong>What's included in your PDF export:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {exportType === 'all' && (
+                    <>
+                      <li>Complete expense history with categories and totals</li>
+                      <li>Income records with sources and summaries</li>
+                      <li>Budget analysis with spending vs. limits</li>
+                      <li>Financial overview and insights</li>
+                    </>
+                  )}
+                  {exportType === 'expenses' && (
+                    <>
+                      <li>Detailed expense transactions</li>
+                      <li>Category-wise spending breakdown</li>
+                      <li>Total expenses summary</li>
+                    </>
+                  )}
+                  {exportType === 'income' && (
+                    <>
+                      <li>Income records by source</li>
+                      <li>Monthly income summaries</li>
+                      <li>Total income calculations</li>
+                    </>
+                  )}
+                  {exportType === 'budgets' && (
+                    <>
+                      <li>Budget vs. actual spending analysis</li>
+                      <li>Category-wise budget performance</li>
+                      <li>Remaining budget summaries</li>
+                    </>
+                  )}
+                </ul>
               </div>
             </CardContent>
           </Card>
