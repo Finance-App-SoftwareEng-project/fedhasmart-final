@@ -1,3 +1,15 @@
+/**
+ * Dashboard Component
+ * 
+ * Main dashboard page displaying comprehensive financial overview including:
+ * - Financial statistics (income, expenses, net balance, savings)
+ * - Expense category breakdown (pie chart)
+ * - Spending trends over time (line chart with daily/weekly/monthly views)
+ * - Budget tracking and remaining budget calculations
+ * - Financial health indicators
+ * - PDF export functionality
+ */
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,34 +25,39 @@ import { toast } from 'sonner';
 import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 export default function Dashboard() {
+  // Authentication hooks - support both auth systems for flexibility
   const { user: supabaseUser, loading: authLoading } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  // Prioritize unified user, fall back to Supabase user if needed
+  // This allows the component to work with either authentication system
   const user = unifiedUser || supabaseUser;
+  // Dashboard state management
   const [stats, setStats] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    remainingBudget: 0,
-    savingsProgress: 0,
-    totalContributions: 0,
-    goalCount: 0,
-    netBalance: 0,
-    savingsRate: 0,
+    totalIncome: 0, // Total income for current month
+    totalExpenses: 0, // Total expenses for current month
+    remainingBudget: 0, // Remaining budget after expenses
+    savingsProgress: 0, // Total saved across all goals
+    totalContributions: 0, // Contributions made this month
+    goalCount: 0, // Number of active savings goals
+    netBalance: 0, // Income - Expenses - Contributions
+    savingsRate: 0, // Percentage of income saved
   });
-  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
-  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
-  const [displayName, setDisplayName] = useState<string>('');
-  const [exportingPDF, setExportingPDF] = useState(false);
+  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]); // Category breakdown for pie chart
+  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]); // Historical spending data for line chart
+  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly'); // Chart time period
+  const [displayName, setDisplayName] = useState<string>(''); // User's display name for greeting
+  const [exportingPDF, setExportingPDF] = useState(false); // PDF export loading state
 
+  // Redirect to auth if user is not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
+  // Load user profile and dashboard data when user is authenticated
   useEffect(() => {
     if (user) {
       loadUserProfile();
@@ -48,8 +65,10 @@ export default function Dashboard() {
     }
   }, [user]);
 
+  // Reload time series data when time period changes
   useEffect(() => {
     if (user) {
+      // Extract user ID - handles both unified and Supabase user formats
       const userId = 'supabaseUser' in user && user.supabaseUser?.id 
         ? user.supabaseUser.id 
         : 'id' in user 
@@ -93,30 +112,40 @@ export default function Dashboard() {
     }
   };
 
+  /**
+   * Load time series data for spending trends chart
+   * 
+   * Fetches historical expense data and groups it by the selected time period.
+   * Supports daily, weekly, and monthly views with appropriate date ranges.
+   * 
+   * @param period - Time period for grouping (daily, weekly, monthly)
+   * @param userId - User ID to fetch data for
+   */
   const loadTimeSeriesData = async (period: 'daily' | 'weekly' | 'monthly', userId: string) => {
     try {
       let startDate: Date;
       let groupBy: string;
       let limit: number;
 
-      // Set date range and grouping based on period
+      // Configure date range and data grouping based on selected period
+      // Each period shows a different amount of historical data
       switch (period) {
         case 'daily':
           startDate = new Date();
-          startDate.setDate(startDate.getDate() - 30); // Last 30 days
+          startDate.setDate(startDate.getDate() - 30); // Last 30 days for daily view
           groupBy = 'day';
           limit = 30;
           break;
         case 'weekly':
           startDate = new Date();
-          startDate.setDate(startDate.getDate() - (12 * 7)); // Last 12 weeks
+          startDate.setDate(startDate.getDate() - (12 * 7)); // Last 12 weeks for weekly view
           groupBy = 'week';
           limit = 12;
           break;
         case 'monthly':
         default:
           startDate = new Date();
-          startDate.setMonth(startDate.getMonth() - 6); // Last 6 months
+          startDate.setMonth(startDate.getMonth() - 6); // Last 6 months for monthly view
           groupBy = 'month';
           limit = 6;
           break;
@@ -214,8 +243,18 @@ export default function Dashboard() {
     }
   };
 
+  /**
+   * Load all dashboard data
+   * 
+   * Fetches and calculates comprehensive financial statistics including:
+   * - Monthly income and expenses
+   * - Budget tracking and remaining budget
+   * - Savings goals progress
+   * - Financial health metrics (net balance, savings rate)
+   * - Expense category breakdown
+   */
   const loadDashboardData = async () => {
-    // Use the appropriate user ID based on account type
+    // Extract user ID - handles both unified and Supabase user formats
     const userId = 'supabaseUser' in user && user.supabaseUser?.id 
       ? user.supabaseUser.id 
       : 'id' in user 
@@ -225,41 +264,45 @@ export default function Dashboard() {
     if (!userId) return;
 
     try {
-      // Get total expenses for current month
+      // Calculate start of current month for filtering
       const currentMonth = new Date();
-      currentMonth.setDate(1);
+      currentMonth.setDate(1); // Set to first day of month
       
+      // Fetch expenses for current month
       const { data: expenses } = await supabase
         .from('expenses')
         .select('amount, category, date')
         .eq('user_id', userId)
-        .gte('date', currentMonth.toISOString().split('T')[0]);
+        .gte('date', currentMonth.toISOString().split('T')[0]); // From start of month
 
+      // Calculate total expenses for current month
       const totalExpenses = expenses?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0;
 
-      // Get total income for current month
+      // Fetch income for current month
       const { data: income } = await supabase
         .from('income')
         .select('amount')
-        .gte('date', currentMonth.toISOString().split('T')[0]);
+        .gte('date', currentMonth.toISOString().split('T')[0]); // From start of month
 
+      // Calculate total income for current month
       const totalIncome = income?.reduce((sum, inc) => sum + Number(inc.amount), 0) || 0;
 
-      // Get budgets (both monthly and weekly for current period)
+      // Calculate current week start (Monday) for weekly budget filtering
       const currentWeekStart = new Date();
       currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
       currentWeekStart.setHours(0, 0, 0, 0);
 
+      // Fetch all budgets
       const { data: budgets } = await supabase
         .from('budgets')
         .select('limit_amount, spent_amount, period, month, category');
 
-      // Filter budgets for current month or current week
+      // Filter budgets to only show active ones (current month or current week)
       const currentMonthStr = currentMonth.toISOString().substring(0, 7); // e.g., "2025-10"
       
       const activeBudgets = budgets?.filter(b => {
         if (b.period === 'weekly') {
-          // For weekly budgets, check if the budget's start date is within the current week
+          // For weekly budgets, check if budget's start date falls within current week
           const budgetDate = new Date(b.month);
           const weekEnd = new Date(currentWeekStart);
           weekEnd.setDate(weekEnd.getDate() + 7);
@@ -271,15 +314,18 @@ export default function Dashboard() {
         }
       }) || [];
 
+      // Calculate total budget limit across all active budgets
       const totalBudget = activeBudgets.reduce((sum, b) => sum + Number(b.limit_amount), 0);
       
-      // Calculate expenses that fall within budgeted categories for the current period
+      // Calculate how much was spent on budgeted categories
+      // Only count expenses in categories that have active budgets
       const budgetedCategories = activeBudgets.map(b => b.category);
       const budgetedExpenses = expenses?.filter(exp => 
         budgetedCategories.includes(exp.category)
       ) || [];
       const spentOnBudgetedCategories = budgetedExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
       
+      // Calculate remaining budget (total budget - spent on budgeted categories)
       const remainingBudget = totalBudget - spentOnBudgetedCategories;
 
       // Get goals
@@ -349,6 +395,17 @@ export default function Dashboard() {
 
   const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
+  /**
+   * Calculate financial health status based on savings rate
+   * 
+   * Categorizes financial health into four levels:
+   * - Excellent: 80%+ savings rate
+   * - Good: 60-79% savings rate
+   * - Fair: 40-59% savings rate
+   * - Poor: <40% savings rate
+   * 
+   * @returns Object with health label and color class
+   */
   const getHealthStatus = () => {
     if (stats.savingsRate >= 80) return { label: "Excellent", color: "text-success" };
     if (stats.savingsRate >= 60) return { label: "Good", color: "text-primary" };
