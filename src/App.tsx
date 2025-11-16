@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "next-themes";
+import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Income from "./pages/Income";
@@ -21,6 +22,31 @@ import { MobileBottomNav } from "./components/MobileBottomNav";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const location = useLocation();
+  const showMobileNav = !['/auth', '/phone-auth', '/'].includes(location.pathname);
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/phone-auth" element={<PhoneAuthPage />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/debug" element={<DebugAuth />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/income" element={<Income />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/goals" element={<Goals />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      {showMobileNav && <MobileBottomNav />}
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -29,21 +55,7 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <NotificationProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/phone-auth" element={<PhoneAuthPage />} />
-              <Route path="/profile" element={<UserProfile />} />
-              <Route path="/debug" element={<DebugAuth />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/income" element={<Income />} />
-              <Route path="/expenses" element={<Expenses />} />
-              <Route path="/budgets" element={<Budgets />} />
-              <Route path="/goals" element={<Goals />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MobileBottomNav />
+            <AppContent />
           </NotificationProvider>
         </AuthProvider>
       </TooltipProvider>

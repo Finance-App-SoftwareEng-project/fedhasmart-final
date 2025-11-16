@@ -46,7 +46,7 @@ export default function Auth() {
       if (data.user && !data.session) {
         // Email confirmation required
         toast.success(
-          '🎉 Account created successfully! Please check your email and click the confirmation link to activate your account.',
+          'Account created successfully! Please check your email and click the confirmation link to activate your account.',
           { duration: 8000 }
         );
       } else {
