@@ -202,10 +202,19 @@ export default function Dashboard() {
         monthlyMap.set(month, current + Number(exp.amount));
       });
 
-      const monthlyData = Array.from(monthlyMap.entries()).map(([month, amount]) => ({
-        month,
-        amount,
-      }));
+      const monthlyData = Array.from(monthlyMap.entries()).map(([month, amount]) => {
+        // Convert YYYY-MM to more readable format
+        const date = new Date(month + '-01');
+        const formattedMonth = date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short' 
+        });
+        return {
+          month: formattedMonth,
+          rawMonth: month, // Keep original for sorting if needed
+          amount,
+        };
+      }).sort((a, b) => a.rawMonth.localeCompare(b.rawMonth));
       setMonthlyExpenses(monthlyData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -404,17 +413,40 @@ export default function Dashboard() {
             <CardContent>
               {monthlyExpenses.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={monthlyExpenses}>
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                  <LineChart 
+                    data={monthlyExpenses} 
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Spending']}
+                      labelFormatter={(label) => `Month: ${label}`}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                      }}
+                    />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
                     <Line
                       type="monotone"
                       dataKey="amount"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       name="Spending"
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
