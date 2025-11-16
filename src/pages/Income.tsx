@@ -1,3 +1,15 @@
+/**
+ * Income Page Component
+ * 
+ * Provides functionality for tracking and managing income entries:
+ * - Add new income entries with source, amount, date, and notes
+ * - View income history in a chronological list
+ * - Delete existing income entries
+ * - Export income data to PDF
+ * 
+ * Supports multiple income sources: Salary, Freelance, Business, Investment, Gift, Other
+ */
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,47 +32,69 @@ import {
 } from "@/components/ui/select";
 import { Navbar } from "@/components/Navbar";
 
-// Income table row structure
+/**
+ * Income entry interface
+ * Represents a single income transaction in the database
+ */
 interface Income {
-  id: string;
-  amount: number;
-  source: string;
-  date: string;
-  notes: string | null;
+  id: string; // Unique identifier
+  amount: number; // Income amount in KES
+  source: string; // Source of income (e.g., "Salary", "Freelance")
+  date: string; // Date of income (ISO date string)
+  notes: string | null; // Optional notes about the income
 }
 
+/**
+ * Predefined income sources
+ * Provides consistent categorization for income tracking
+ */
 const INCOME_SOURCES = ["Salary", "Freelance", "Business", "Investment", "Gift", "Other"];
 
-// Component: Income
+/**
+ * Income Component
+ * 
+ * Main component for income management. Handles:
+ * - Authentication (supports both auth systems)
+ * - Income CRUD operations
+ * - PDF export functionality
+ */
 export default function Income() {
+  // Authentication hooks - support both auth systems
   const { user: supabaseUser } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  // Prioritize unified user, fall back to Supabase user
   const user = unifiedUser || supabaseUser;
   const { toast } = useToast();
-  const [income, setIncome] = useState<Income[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [exportingPDF, setExportingPDF] = useState(false);
+  
+  // Component state
+  const [income, setIncome] = useState<Income[]>([]); // List of all income entries
+  const [loading, setLoading] = useState(false); // Loading state for form submission
+  const [exportingPDF, setExportingPDF] = useState(false); // Loading state for PDF export
   const [newIncome, setNewIncome] = useState({
-    amount: "",
-    source: "",
-    date: format(new Date(), "yyyy-MM-dd"),
-    notes: "",
+    amount: "", // Income amount (string for input handling)
+    source: "", // Income source category
+    date: format(new Date(), "yyyy-MM-dd"), // Default to today's date
+    notes: "", // Optional notes
   });
 
+  // Fetch income data when user is authenticated
   useEffect(() => {
     if (user) {
       fetchIncome();
     }
   }, [user]);
 
+  /**
+   * Fetch all income entries from database
+   * Orders by date (most recent first) for better UX
+   */
   const fetchIncome = async () => {
     try {
       const { data, error } = await supabase
         .from("income")
         .select("*")
-        .order("date", { ascending: false });
+        .order("date", { ascending: false }); // Most recent first
 
       if (error) throw error;
       setIncome(data || []);
@@ -73,19 +107,28 @@ export default function Income() {
     }
   };
 
+  /**
+   * Handle form submission for adding new income
+   * 
+   * Validates user authentication, inserts new income entry,
+   * shows success/error feedback, and refreshes the income list.
+   * 
+   * @param e - Form submission event
+   */
   const handleAddIncome = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setLoading(true);
     try {
+      // Insert new income entry into database
       const { error } = await supabase.from("income").insert([
         {
-          user_id: user.id,
-          amount: parseFloat(newIncome.amount),
+          user_id: user.id, // Associate with current user
+          amount: parseFloat(newIncome.amount), // Convert string to number
           source: newIncome.source,
           date: newIncome.date,
-          notes: newIncome.notes || null,
+          notes: newIncome.notes || null, // Handle empty notes
         },
       ]);
 
@@ -96,13 +139,15 @@ export default function Income() {
         description: "Income added successfully",
       });
 
+      // Reset form to initial state
       setNewIncome({
         amount: "",
         source: "",
-        date: format(new Date(), "yyyy-MM-dd"),
+        date: format(new Date(), "yyyy-MM-dd"), // Reset to today
         notes: "",
       });
 
+      // Refresh income list to show new entry
       fetchIncome();
     } catch (error: any) {
       toast({
@@ -115,6 +160,13 @@ export default function Income() {
     }
   };
 
+  /**
+   * Handle income deletion
+   * 
+   * Deletes an income entry by ID and refreshes the list.
+   * 
+   * @param id - Unique identifier of income entry to delete
+   */
   const handleDeleteIncome = async (id: string) => {
     try {
       const { error } = await supabase.from("income").delete().eq("id", id);
@@ -126,6 +178,7 @@ export default function Income() {
         description: "Income deleted successfully",
       });
 
+      // Refresh income list to reflect deletion
       fetchIncome();
     } catch (error: any) {
       toast({
@@ -136,6 +189,12 @@ export default function Income() {
     }
   };
 
+  /**
+   * Handle PDF export of income data
+   * 
+   * Exports all income entries to a PDF file for record keeping.
+   * Requires user authentication.
+   */
   const handleExportIncome = async () => {
     if (!user) {
       toast({
