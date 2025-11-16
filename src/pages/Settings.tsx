@@ -196,7 +196,7 @@ export default function Settings() {
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">Include country code (e.g., +1 for US)</p>
+                    <p className="text-xs text-muted-foreground">Include country code (e.g., +254 for Kenya)</p>
                   </>
                 )}
               </div>
