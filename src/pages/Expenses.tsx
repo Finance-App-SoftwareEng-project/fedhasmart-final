@@ -54,53 +54,91 @@ interface ExpenseAnalytics {
   categoryTotals: Record<string, number>;
 }
 
+/**
+ * Main Expenses component for expense management
+ * Handles user authentication, expense CRUD operations, and data visualization
+ */
 export default function Expenses() {
+  // Authentication hooks - support both Supabase and unified auth systems
   const { user: supabaseUser, loading: authLoading } = useAuth();
   const { user: unifiedUser } = useUnifiedAuth();
   const navigate = useNavigate();
   
-  // Use unified user if available, otherwise fall back to Supabase user
+  /**
+   * Prioritize unified user authentication over Supabase user
+   * This provides flexibility for different authentication providers
+   */
   const user = unifiedUser || supabaseUser;
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [open, setOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [dateRange, setDateRange] = useState('all');
-  const [formData, setFormData] = useState({
+
+  // Core state management for expenses data and UI interactions
+  const [expenses, setExpenses] = useState<any[]>([]); // Store all user expenses
+  const [open, setOpen] = useState(false); // Control add expense dialog visibility
+  
+  // Filtering state for enhanced user experience
+  const [filterCategory, setFilterCategory] = useState('all'); // Category-based filtering
+  const [dateRange, setDateRange] = useState('all'); // Time-based filtering
+  
+  /**
+   * Form state for adding new expenses
+   * Initialized with current date for better UX
+   */
+  const [formData, setFormData] = useState<ExpenseFormData>({
     amount: '',
     category: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0], // Default to today's date
     notes: '',
   });
 
-  // Calculate expense analytics
-  const getExpenseAnalytics = () => {
+  /**
+   * Calculate comprehensive expense analytics for dashboard display
+   * Provides insights into spending patterns and financial behavior
+   * @returns ExpenseAnalytics object with calculated metrics
+   */
+  const getExpenseAnalytics = (): ExpenseAnalytics => {
+    // Calculate total expenses across all time periods
     const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+    
+    // Get current month and year for monthly calculations
     const thisMonth = new Date().getMonth();
     const thisYear = new Date().getFullYear();
     
+    /**
+     * Filter expenses for current month only
+     * Used for monthly spending tracking and budgeting insights
+     */
     const monthlyExpenses = expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
       return expenseDate.getMonth() === thisMonth && expenseDate.getFullYear() === thisYear;
     });
     
+    // Calculate monthly total for current month tracking
     const monthlyTotal = monthlyExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
     
+    /**
+     * Aggregate expenses by category for spending pattern analysis
+     * Helps users understand where their money is going
+     */
     const categoryTotals = expenses.reduce((acc, expense) => {
       acc[expense.category] = (acc[expense.category] || 0) + parseFloat(expense.amount);
       return acc;
     }, {} as Record<string, number>);
     
+    /**
+     * Find the category with highest spending
+     * Sorts categories by total amount in descending order
+     */
     const topCategory = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number))[0];
     
     return {
       totalExpenses,
       monthlyTotal,
-      totalTransactions: expenses.length,
-      topCategory: topCategory ? { name: topCategory[0], amount: topCategory[1] } : null,
+      totalTransactions: expenses.length, // Total number of expense entries
+      topCategory: topCategory ? { name: topCategory[0], amount: topCategory[1] as number } : null,
       categoryTotals
     };
   };
 
+  // Generate analytics data for dashboard display
   const analytics = getExpenseAnalytics();
 
   useEffect(() => {
