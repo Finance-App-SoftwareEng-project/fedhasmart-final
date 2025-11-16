@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 const CATEGORIES = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Other'];
 
@@ -26,6 +27,7 @@ export default function Budgets() {
   const user = unifiedUser || supabaseUser;
   const [budgets, setBudgets] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [formData, setFormData] = useState({
     category: '',
     limitAmount: '',
@@ -90,6 +92,24 @@ export default function Budgets() {
     }
   };
 
+  const handleExportBudgets = async () => {
+    if (!user) {
+      toast.error('You must be logged in to export budget data');
+      return;
+    }
+
+    setExportingPDF(true);
+    try {
+      await exportFinancialDataToPDF(user.id, 'budgets');
+      toast.success('Budget data exported to PDF successfully!');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export budget data');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   const getProgressColor = (percentage: number) => {
     if (percentage >= 100) return 'bg-destructive';
     if (percentage >= 80) return 'bg-warning';
@@ -106,9 +126,19 @@ export default function Budgets() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Budgets</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleExportBudgets}
+              disabled={exportingPDF || budgets.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exportingPDF ? 'Exporting...' : 'Export PDF'}
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -171,7 +201,8 @@ export default function Budgets() {
                 <Button type="submit" className="w-full">Set Budget</Button>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
