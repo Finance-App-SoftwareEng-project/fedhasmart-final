@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { CreditCard, TrendingUp, Activity, ArrowUpCircle, PiggyBank, Calculator, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
@@ -29,7 +30,8 @@ export default function Dashboard() {
     savingsRate: 0,
   });
   const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
+  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
+  const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [displayName, setDisplayName] = useState<string>('');
   const [exportingPDF, setExportingPDF] = useState(false);
 
@@ -45,6 +47,20 @@ export default function Dashboard() {
       loadDashboardData();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      const userId = 'supabaseUser' in user && user.supabaseUser?.id 
+        ? user.supabaseUser.id 
+        : 'id' in user 
+        ? user.id 
+        : null;
+      
+      if (userId) {
+        loadTimeSeriesData(timePeriod, userId);
+      }
+    }
+  }, [timePeriod, user]);
 
   const loadUserProfile = async () => {
     // Try to get display name from unified user first
@@ -74,6 +90,127 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
+    }
+  };
+
+  const loadTimeSeriesData = async (period: 'daily' | 'weekly' | 'monthly', userId: string) => {
+    try {
+      let startDate: Date;
+      let groupBy: string;
+      let limit: number;
+
+      // Set date range and grouping based on period
+      switch (period) {
+        case 'daily':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - 30); // Last 30 days
+          groupBy = 'day';
+          limit = 30;
+          break;
+        case 'weekly':
+          startDate = new Date();
+          startDate.setDate(startDate.getDate() - (12 * 7)); // Last 12 weeks
+          groupBy = 'week';
+          limit = 12;
+          break;
+        case 'monthly':
+        default:
+          startDate = new Date();
+          startDate.setMonth(startDate.getMonth() - 6); // Last 6 months
+          groupBy = 'month';
+          limit = 6;
+          break;
+      }
+
+      const { data: historicalExpenses } = await supabase
+        .from('expenses')
+        .select('amount, date')
+        .eq('user_id', userId)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      // Group data based on selected period
+      const dataMap = new Map();
+      
+      historicalExpenses?.forEach((exp) => {
+        let key: string;
+        let formattedLabel: string;
+        const expDate = new Date(exp.date);
+
+        switch (period) {
+          case 'daily':
+            key = exp.date; // YYYY-MM-DD
+            formattedLabel = expDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'weekly':
+            // Get week start (Monday)
+            const weekStart = new Date(expDate);
+            const dayOfWeek = weekStart.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            weekStart.setDate(weekStart.getDate() - daysToMonday);
+            key = weekStart.toISOString().split('T')[0];
+            formattedLabel = weekStart.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'monthly':
+          default:
+            key = exp.date.substring(0, 7); // YYYY-MM
+            const monthDate = new Date(key + '-01');
+            formattedLabel = monthDate.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            });
+            break;
+        }
+
+        const current = dataMap.get(key) || 0;
+        dataMap.set(key, current + Number(exp.amount));
+      });
+
+      // Convert to array and sort
+      const timeSeriesArray = Array.from(dataMap.entries()).map(([key, amount]) => {
+        let formattedLabel: string;
+        
+        switch (period) {
+          case 'daily':
+            const dayDate = new Date(key);
+            formattedLabel = dayDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            });
+            break;
+          case 'weekly':
+            const weekDate = new Date(key);
+            formattedLabel = `Week of ${weekDate.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            })}`;
+            break;
+          case 'monthly':
+          default:
+            const monthDate = new Date(key + '-01');
+            formattedLabel = monthDate.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short' 
+            });
+            break;
+        }
+
+        return {
+          period: formattedLabel,
+          rawPeriod: key,
+          amount,
+        };
+      }).sort((a, b) => a.rawPeriod.localeCompare(b.rawPeriod));
+
+      setTimeSeriesData(timeSeriesArray);
+    } catch (error) {
+      console.error('Error loading time series data:', error);
     }
   };
 
@@ -185,37 +322,8 @@ export default function Dashboard() {
       }));
       setExpensesByCategory(categoryData);
 
-      // Get last 6 months expenses
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-      const { data: historicalExpenses } = await supabase
-        .from('expenses')
-        .select('amount, date')
-        .gte('date', sixMonthsAgo.toISOString().split('T')[0])
-        .order('date', { ascending: true });
-
-      const monthlyMap = new Map();
-      historicalExpenses?.forEach((exp) => {
-        const month = exp.date.substring(0, 7);
-        const current = monthlyMap.get(month) || 0;
-        monthlyMap.set(month, current + Number(exp.amount));
-      });
-
-      const monthlyData = Array.from(monthlyMap.entries()).map(([month, amount]) => {
-        // Convert YYYY-MM to more readable format
-        const date = new Date(month + '-01');
-        const formattedMonth = date.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short' 
-        });
-        return {
-          month: formattedMonth,
-          rawMonth: month, // Keep original for sorting if needed
-          amount,
-        };
-      }).sort((a, b) => a.rawMonth.localeCompare(b.rawMonth));
-      setMonthlyExpenses(monthlyData);
+      // Load time series data based on selected period
+      await loadTimeSeriesData(timePeriod, userId);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
@@ -408,22 +516,47 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Monthly Spending Trend</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base sm:text-lg">Spending Trend</CardTitle>
+                <div className="flex gap-1">
+                  <Badge 
+                    variant={timePeriod === 'daily' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('daily')}
+                  >
+                    Daily
+                  </Badge>
+                  <Badge 
+                    variant={timePeriod === 'weekly' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('weekly')}
+                  >
+                    Weekly
+                  </Badge>
+                  <Badge 
+                    variant={timePeriod === 'monthly' ? 'default' : 'outline'}
+                    className="cursor-pointer px-3 py-1 text-xs"
+                    onClick={() => setTimePeriod('monthly')}
+                  >
+                    Monthly
+                  </Badge>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              {monthlyExpenses.length > 0 ? (
+              {timeSeriesData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart 
-                    data={monthlyExpenses} 
+                    data={timeSeriesData} 
                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                   >
                     <XAxis 
-                      dataKey="month" 
-                      tick={{ fontSize: 12 }}
+                      dataKey="period" 
+                      tick={{ fontSize: 10 }}
                       angle={-45}
                       textAnchor="end"
-                      height={60}
-                      interval={0}
+                      height={70}
+                      interval={timePeriod === 'daily' ? 'preserveStartEnd' : 0}
                     />
                     <YAxis 
                       tick={{ fontSize: 12 }}
@@ -431,7 +564,7 @@ export default function Dashboard() {
                     />
                     <Tooltip 
                       formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Spending']}
-                      labelFormatter={(label) => `Month: ${label}`}
+                      labelFormatter={(label) => `${timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}: ${label}`}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
                         border: '1px solid hsl(var(--border))',
@@ -452,7 +585,7 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
-                  No historical data available
+                  No historical data available for {timePeriod} view
                 </div>
               )}
             </CardContent>
