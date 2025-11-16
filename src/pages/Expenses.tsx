@@ -1,6 +1,5 @@
 /**
  * Expenses Page Component
- * 
  * This component provides a comprehensive expense management interface for users.
  * Features include:
  * - Adding new expenses with categorization
