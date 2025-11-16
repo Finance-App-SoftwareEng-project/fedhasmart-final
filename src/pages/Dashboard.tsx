@@ -104,8 +104,21 @@ export default function Dashboard() {
         .eq('id', userId)
         .single();
 
-      if (data && !error) {
-        setDisplayName(data.display_name || '');
+      if (data && !error && data.display_name) {
+        setDisplayName(data.display_name);
+      } else {
+        // Fallback to user's email first name if no display name
+        const email = 'supabaseUser' in user && user.supabaseUser?.email 
+          ? user.supabaseUser.email 
+          : 'email' in user 
+          ? user.email 
+          : null;
+        
+        if (email) {
+          // Extract first part of email before @ as fallback name
+          const firstName = email.split('@')[0];
+          setDisplayName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+        }
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
