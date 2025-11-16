@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { toast } from 'sonner';
 
@@ -48,8 +49,22 @@ export const PhoneAuth: React.FC = () => {
       toast.success('OTP sent to your phone');
     } catch (err: any) {
       console.error('Error sending OTP:', err);
-      setError(err.message || 'Failed to send OTP. Please try again.');
-      toast.error(err.message || 'Failed to send OTP');
+      
+      // Handle specific phone provider errors
+      if (err.message?.includes('Unsupported phone provider') || 
+          err.message?.includes('unsupported phone provider')) {
+        setError('Phone authentication is not available for this number. This could be due to carrier restrictions or regional limitations. Please try using email authentication instead.');
+        toast.error('Phone provider not supported. Try email authentication.');
+      } else if (err.message?.includes('Invalid phone number')) {
+        setError('Please enter a valid phone number with country code (e.g., +1234567890)');
+        toast.error('Invalid phone number format');
+      } else if (err.message?.includes('SMS not supported')) {
+        setError('SMS is not supported for this phone number. Please try email authentication.');
+        toast.error('SMS not supported for this number');
+      } else {
+        setError(err.message || 'Failed to send OTP. Please try email authentication if the issue persists.');
+        toast.error(err.message || 'Failed to send OTP');
+      }
     } finally {
       setLoading(false);
     }
@@ -146,7 +161,7 @@ export const PhoneAuth: React.FC = () => {
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
-                Include country code (e.g., +1 for US, +91 for India)
+                Include country code (e.g., +1 for US, +44 for UK). Note: Phone authentication may not be available for all carriers.
               </p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
@@ -201,6 +216,18 @@ export const PhoneAuth: React.FC = () => {
             </div>
           </form>
         )}
+        
+        <div className="mt-6 pt-4 border-t">
+          <div className="text-center space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Having trouble with phone verification? Phone authentication may not be available for all carriers or regions.
+            </p>
+            <Link to="/auth" className="inline-flex items-center text-sm text-primary hover:underline">
+              Use Email Authentication Instead
+              <ArrowRight className="ml-1 h-3 w-3" />
+            </Link>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
