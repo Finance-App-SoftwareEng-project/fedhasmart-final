@@ -27,6 +27,7 @@ export default function Expenses() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [dateRange, setDateRange] = useState('all');
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
@@ -124,9 +125,31 @@ export default function Expenses() {
     }
   };
 
-  const filteredExpenses = filterCategory === 'all'
-    ? expenses
-    : expenses.filter((exp) => exp.category === filterCategory);
+  const getDateRangeFilter = (expense: any) => {
+    const expenseDate = new Date(expense.date);
+    const now = new Date();
+    
+    switch (dateRange) {
+      case 'today':
+        return expenseDate.toDateString() === now.toDateString();
+      case 'week':
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        return expenseDate >= weekAgo;
+      case 'month':
+        return expenseDate.getMonth() === now.getMonth() && 
+               expenseDate.getFullYear() === now.getFullYear();
+      case 'year':
+        return expenseDate.getFullYear() === now.getFullYear();
+      default:
+        return true;
+    }
+  };
+
+  const filteredExpenses = expenses.filter((exp) => {
+    const categoryMatch = filterCategory === 'all' || exp.category === filterCategory;
+    const dateMatch = getDateRangeFilter(exp);
+    return categoryMatch && dateMatch;
+  });
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -260,19 +283,33 @@ export default function Expenses() {
 
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle>All Expenses</CardTitle>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Filter by date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
+                    <SelectItem value="month">This Month</SelectItem>
+                    <SelectItem value="year">This Year</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
