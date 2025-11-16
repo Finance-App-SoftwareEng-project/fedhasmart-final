@@ -6,7 +6,10 @@ import { Navbar } from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { CreditCard, TrendingUp, Activity, ArrowUpCircle, PiggyBank, Calculator } from 'lucide-react';
+import { CreditCard, TrendingUp, Activity, ArrowUpCircle, PiggyBank, Calculator, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { exportFinancialDataToPDF } from '@/lib/pdfExport';
 
 export default function Dashboard() {
   const { user: supabaseUser, loading: authLoading } = useAuth();
@@ -28,6 +31,7 @@ export default function Dashboard() {
   const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
   const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState<string>('');
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -208,6 +212,24 @@ export default function Dashboard() {
     }
   };
 
+  const handleExportCompleteDashboard = async () => {
+    if (!user) {
+      toast.error('You must be logged in to export financial data');
+      return;
+    }
+
+    setExportingPDF(true);
+    try {
+      await exportFinancialDataToPDF(user.id, 'all');
+      toast.success('Complete financial report exported to PDF successfully!');
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast.error(error.message || 'Failed to export financial data');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
   const getHealthStatus = () => {
@@ -231,13 +253,24 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background mobile-content-padding">
       <Navbar />
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold">
-            {displayName ? `${displayName}'s Dashboard` : 'Dashboard'}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            Welcome back! Here's your financial overview.
-          </p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6 sm:mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">
+              {displayName ? `${displayName}'s Dashboard` : 'Dashboard'}
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+              Welcome back! Here's your financial overview.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleExportCompleteDashboard}
+            disabled={exportingPDF}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {exportingPDF ? 'Generating Report...' : 'Export Complete Report'}
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
