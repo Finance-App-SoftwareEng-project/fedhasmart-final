@@ -471,7 +471,7 @@ export default function Expenses() {
                   <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
                   <p className="text-2xl font-bold">KES {analytics.totalExpenses.toLocaleString()}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-muted-foreground" />
+                <span className="text-xl font-semibold text-muted-foreground">KSh</span>
               </div>
             </CardContent>
           </Card>
