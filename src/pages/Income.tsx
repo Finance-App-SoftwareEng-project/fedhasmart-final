@@ -233,7 +233,7 @@ export default function Income() {
             variant="outline" 
             onClick={handleExportIncome}
             disabled={exportingPDF || income.length === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 touch-target w-full sm:w-auto"
           >
             <Download className="h-4 w-4" />
             {exportingPDF ? 'Exporting...' : 'Export PDF'}
@@ -324,39 +324,40 @@ export default function Income() {
             <CardTitle className="text-base sm:text-lg">Income History</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {income.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm sm:text-base">
                   No income recorded yet
                 </p>
               ) : (
                 income.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg touch-target hover:bg-accent/50 transition-colors"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span className="font-semibold text-base sm:text-lg">
                           KES {Number(item.amount).toLocaleString()}
                         </span>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
                           • {item.source}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                         {format(new Date(item.date), "MMM dd, yyyy")}
                       </p>
                       {item.notes && (
-                        <p className="text-sm mt-1">{item.notes}</p>
+                        <p className="text-xs sm:text-sm mt-1 sm:mt-2 break-words">{item.notes}</p>
                       )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteIncome(item.id)}
+                      className="touch-target flex-shrink-0 ml-2"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 ))

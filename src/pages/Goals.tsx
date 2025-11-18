@@ -149,11 +149,11 @@ export default function Goals() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Savings Goals</h1>
           <Dialog open={openGoal} onOpenChange={setOpenGoal}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="touch-target w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Goal
               </Button>
@@ -202,11 +202,11 @@ export default function Goals() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {goals.length === 0 ? (
             <Card className="col-span-full">
-              <CardContent className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">No savings goals yet. Create your first goal to start saving!</p>
+              <CardContent className="flex items-center justify-center py-8 sm:py-12">
+                <p className="text-muted-foreground text-sm sm:text-base text-center">No savings goals yet. Create your first goal to start saving!</p>
               </CardContent>
             </Card>
           ) : (
@@ -215,24 +215,24 @@ export default function Goals() {
               const isComplete = percentage >= 100;
 
               return (
-                <Card key={goal.id} className={isComplete ? 'border-success' : ''}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{goal.name}</CardTitle>
-                      {isComplete && <Badge variant="default" className="bg-success">Completed!</Badge>}
+                <Card key={goal.id} className={`touch-target hover:shadow-md transition-shadow ${isComplete ? 'border-success' : ''}`}>
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <div className="flex justify-between items-start gap-2">
+                      <CardTitle className="text-base sm:text-lg min-w-0 flex-1">{goal.name}</CardTitle>
+                      {isComplete && <Badge variant="default" className="bg-success flex-shrink-0 text-xs">Completed!</Badge>}
                     </div>
                     {goal.deadline && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                         Due: {new Date(goal.deadline).toLocaleDateString()}
                       </p>
                     )}
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 sm:space-y-4 pt-0">
                     <div>
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="flex justify-between text-xs sm:text-sm mb-2">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">
-                          KES {parseFloat(goal.saved_amount).toLocaleString()} / KES {parseFloat(goal.target_amount).toLocaleString()}
+                        <span className="font-medium text-right">
+                          KES {parseFloat(goal.saved_amount).toLocaleString()} / {parseFloat(goal.target_amount).toLocaleString()}
                         </span>
                       </div>
                       <Progress value={Math.min(percentage, 100)} className={getMilestoneColor(percentage)} />
@@ -247,7 +247,7 @@ export default function Goals() {
                           setSelectedGoal(goal.id);
                           setOpenContribution(true);
                         }}
-                        className="w-full"
+                        className="w-full touch-target text-sm sm:text-base"
                         variant="outline"
                       >
                         <TrendingUp className="h-4 w-4 mr-2" />

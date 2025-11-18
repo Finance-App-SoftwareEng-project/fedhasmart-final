@@ -104,8 +104,21 @@ export default function Dashboard() {
         .eq('id', userId)
         .single();
 
-      if (data && !error) {
-        setDisplayName(data.display_name || '');
+      if (data && !error && data.display_name) {
+        setDisplayName(data.display_name);
+      } else {
+        // Fallback to user's email first name if no display name
+        const email = 'supabaseUser' in user && user.supabaseUser?.email 
+          ? user.supabaseUser.email 
+          : 'email' in user 
+          ? user.email 
+          : null;
+        
+        if (email) {
+          // Extract first part of email before @ as fallback name
+          const firstName = email.split('@')[0];
+          setDisplayName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+        }
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -433,7 +446,7 @@ export default function Dashboard() {
               {displayName ? `${displayName}'s Dashboard` : 'Dashboard'}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-              Welcome back! Here's your financial overview.
+              Welcome back{displayName ? `, ${displayName}` : ''}! Here's your financial overview.
             </p>
           </div>
           <Button 
@@ -540,7 +553,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Expenses by Category</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Expenses by Category This Month</CardTitle>
             </CardHeader>
             <CardContent>
               {expensesByCategory.length > 0 ? (

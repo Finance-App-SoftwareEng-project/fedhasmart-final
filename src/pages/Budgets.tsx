@@ -146,19 +146,19 @@ export default function Budgets() {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Budgets</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               onClick={handleExportBudgets}
               disabled={exportingPDF || budgets.length === 0}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 touch-target w-full sm:w-auto"
             >
               <Download className="h-4 w-4" />
               {exportingPDF ? 'Exporting...' : 'Export PDF'}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="touch-target w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Set Budget
               </Button>
@@ -223,11 +223,11 @@ export default function Budgets() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {budgets.length === 0 ? (
             <Card className="col-span-full">
-              <CardContent className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">No budgets set. Create your first budget to get started!</p>
+              <CardContent className="flex items-center justify-center py-8 sm:py-12">
+                <p className="text-muted-foreground text-sm sm:text-base text-center">No budgets set. Create your first budget to get started!</p>
               </CardContent>
             </Card>
           ) : (
@@ -238,24 +238,24 @@ export default function Budgets() {
                 : new Date(budget.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
               return (
-                <Card key={budget.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{budget.category}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{periodLabel} ({budget.period})</p>
+                <Card key={budget.id} className="touch-target hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg">{budget.category}</CardTitle>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{periodLabel} ({budget.period})</p>
                       </div>
                       {percentage >= 80 && (
-                        <AlertCircle className={percentage >= 100 ? 'text-destructive' : 'text-warning'} />
+                        <AlertCircle className={`flex-shrink-0 h-5 w-5 sm:h-6 sm:w-6 ${percentage >= 100 ? 'text-destructive' : 'text-warning'}`} />
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 sm:space-y-4 pt-0">
                     <div>
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="flex justify-between text-xs sm:text-sm mb-2">
                         <span className="text-muted-foreground">Spent</span>
-                        <span className="font-medium">
-                          KES {parseFloat(budget.spent_amount).toLocaleString()} / KES {parseFloat(budget.limit_amount).toLocaleString()}
+                        <span className="font-medium text-right">
+                          KES {parseFloat(budget.spent_amount).toLocaleString()} / {parseFloat(budget.limit_amount).toLocaleString()}
                         </span>
                       </div>
                       <Progress value={percentage} className={getProgressColor(percentage)} />
@@ -265,16 +265,16 @@ export default function Budgets() {
                     </div>
 
                     {percentage >= 100 && (
-                      <Alert variant="destructive">
-                        <AlertDescription className="text-xs">
+                      <Alert variant="destructive" className="py-2 sm:py-3">
+                        <AlertDescription className="text-xs sm:text-sm">
                           Budget exceeded by KES {(parseFloat(budget.spent_amount) - parseFloat(budget.limit_amount)).toLocaleString()}
                         </AlertDescription>
                       </Alert>
                     )}
 
                     {percentage >= 80 && percentage < 100 && (
-                      <Alert>
-                        <AlertDescription className="text-xs">
+                      <Alert className="py-2 sm:py-3">
+                        <AlertDescription className="text-xs sm:text-sm">
                           Approaching budget limit! KES {(parseFloat(budget.limit_amount) - parseFloat(budget.spent_amount)).toLocaleString()} remaining
                         </AlertDescription>
                       </Alert>
