@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,36 +17,162 @@ import {
   Users,
   CheckCircle,
   Star,
-  ArrowRight
+  ArrowRight,
+  Menu,
+  X,
+  Home,
+  User,
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 const Landing = () => {
   const { user } = useUnifiedAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Simple Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Logo size="md" />
-          
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            {user ? (
-              <Link to="/dashboard">
-                <Button>Dashboard</Button>
-              </Link>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/auth">
-                  <Button variant="outline">Login</Button>
+      {/* Mobile-Friendly Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          {/* Desktop Header */}
+          <div className="hidden md:flex justify-between items-center">
+            <Logo size="md" />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              {user ? (
+                <Link to="/dashboard">
+                  <Button>Dashboard</Button>
                 </Link>
-                <Link to="/auth">
-                  <Button>Get Started</Button>
-                </Link>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link to="/auth">
+                    <Button variant="outline">Login</Button>
+                  </Link>
+                  <Link to="/auth">
+                    <Button>Get Started</Button>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Mobile Header */}
+          <div className="md:hidden flex justify-between items-center">
+            <Logo size="sm" />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMobileMenu}
+                className="p-2"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Mobile Dropdown Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t pt-4">
+              <div className="flex flex-col space-y-3">
+                {user ? (
+                  <>
+                    <Link 
+                      to="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    <Link 
+                      to="/expenses"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <ChartBar className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Expenses</span>
+                    </Link>
+                    <Link 
+                      to="/income"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <PiggyBank className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Income</span>
+                    </Link>
+                    <Link 
+                      to="/budgets"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Target className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Budgets</span>
+                    </Link>
+                    <Link 
+                      to="/goals"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Star className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Goals</span>
+                    </Link>
+                    <Link 
+                      to="/settings"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Settings className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Settings</span>
+                    </Link>
+                    <div className="border-t pt-3 mt-3">
+                      <Link 
+                        to="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium">Profile</span>
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link 
+                      to="/auth"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <User className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Login</span>
+                    </Link>
+                    <Link 
+                      to="/auth"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                      <span className="font-medium">Get Started</span>
+                    </Link>
+                    <Link 
+                      to="/phone-auth"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Smartphone className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Phone Signup</span>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -55,7 +181,7 @@ const Landing = () => {
         {user ? (
           /* Welcome Back Section for Authenticated Users */
           <div className="py-20 text-center">
-            <h1 className="text-4xl font-bold mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
               Welcome back, {user.displayName || user.email?.split('@')[0] || 'there'}!
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -86,7 +212,7 @@ const Landing = () => {
                 Kuwa Smart Na FedhaSmart
               </Badge>
               
-              <h1 className="text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 Take Control of Your{' '}
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Financial Future
@@ -125,7 +251,7 @@ const Landing = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  Bank-Level Security
+                  Advanced-Level Security
                 </div>
               </div>
             </div>
@@ -133,7 +259,7 @@ const Landing = () => {
             {/* Key Features Section */}
             <div className="py-20">
               <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold mb-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                   Everything You Need for Financial Success
                 </h2>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -195,9 +321,9 @@ const Landing = () => {
                     <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mx-auto mb-6">
                       <Shield className="h-8 w-8 text-red-500" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-4">Bank-Level Security</h3>
+                    <h3 className="text-xl font-semibold mb-4">Advanced-Level Security</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Multi-factor authentication, encrypted data storage, and secure cloud synchronization.
+                      Encrypted data storage, and secure cloud synchronization.
                     </p>
                   </CardContent>
                 </Card>
@@ -219,7 +345,7 @@ const Landing = () => {
             {/* Why Choose FedhaSmart Section */}
             <div className="py-20 bg-muted/30 rounded-3xl">
               <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold mb-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                   Why Choose FedhaSmart?
                 </h2>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -260,7 +386,7 @@ const Landing = () => {
                     <div>
                       <h3 className="text-lg font-semibold mb-2">Highly Rated</h3>
                       <p className="text-muted-foreground">
-                        4.9/5 stars from satisfied users who love our comprehensive features and exceptional support.
+                        Satisfied users who love our comprehensive features and exceptional support.
                       </p>
                     </div>
                   </div>
@@ -309,7 +435,7 @@ const Landing = () => {
             {/* Call to Action Section */}
             <div className="py-20 text-center">
               <div className="max-w-3xl mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-white">
-                <h2 className="text-4xl font-bold mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6">
                   Ready to Transform Your Financial Life?
                 </h2>
                 <p className="text-xl mb-8 opacity-90">

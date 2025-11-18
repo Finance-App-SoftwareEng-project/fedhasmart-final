@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MobileNavigation } from '@/components/MobileNavigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -133,7 +133,7 @@ export default function Goals() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MobileNavigation currentPage="Goals" />
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Savings Goals</h1>

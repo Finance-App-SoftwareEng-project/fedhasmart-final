@@ -191,7 +191,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone (optional)</Label>
+                  <Label htmlFor="signup-phone">Phone Number</Label>
                   <Input
                     id="signup-phone"
                     type="tel"

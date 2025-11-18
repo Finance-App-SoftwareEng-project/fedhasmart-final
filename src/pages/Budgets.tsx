@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MobileNavigation } from '@/components/MobileNavigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -124,7 +124,7 @@ export default function Budgets() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MobileNavigation currentPage="Budgets" />
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Budgets</h1>

@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
-import { Navbar } from '@/components/Navbar';
+import { MobileNavigation } from '@/components/MobileNavigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -377,7 +377,7 @@ export default function Expenses() {
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation component for consistent app navigation */}
-      <Navbar />
+      <MobileNavigation currentPage="Expenses" />
       
       {/* Main content area with responsive padding for mobile and desktop */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">

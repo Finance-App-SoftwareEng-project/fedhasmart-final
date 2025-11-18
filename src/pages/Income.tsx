@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MobileNavigation } from '@/components/MobileNavigation';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnifiedAuth } from "@/contexts/UnifiedAuthContext";
@@ -164,7 +165,7 @@ export default function Income() {
 
   return (
     <>
-      <Navbar />
+      <MobileNavigation currentPage="Income" />
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 mobile-content-padding">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Income Tracker</h1>

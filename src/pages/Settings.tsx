@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navbar } from '@/components/Navbar';
+import { MobileNavigation } from '@/components/MobileNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,7 +149,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <MobileNavigation currentPage="Settings" />
       <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-4 mobile-content-padding">
         <div className="max-w-2xl mx-auto space-y-6">
           <div>
