@@ -34,6 +34,18 @@ const Landing = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Close mobile menu when clicking outside or on route change
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [mobileMenuOpen]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile-Friendly Header */}
@@ -79,7 +91,7 @@ const Landing = () => {
 
           {/* Mobile Dropdown Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-4 pb-4 border-t pt-4">
+            <div className="md:hidden mt-4 pb-4 border-t pt-4" onClick={(e) => e.stopPropagation()}>
               <div className="flex flex-col space-y-3">
                 {user ? (
                   <>
@@ -180,11 +192,11 @@ const Landing = () => {
       <main className="container mx-auto px-4">
         {user ? (
           /* Welcome Back Section for Authenticated Users */
-          <div className="py-20 text-center">
+          <div className="py-12 sm:py-16 lg:py-20 text-center px-4 sm:px-6">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
               Welcome back, {user.displayName || user.email?.split('@')[0] || 'there'}!
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Ready to manage your finances? Access your dashboard to continue tracking your progress.
             </p>
             
@@ -207,7 +219,7 @@ const Landing = () => {
           /* Landing Page for New Users */
           <>
             {/* Hero Section */}
-            <div className="py-20 text-center">
+            <div className="py-12 sm:py-16 lg:py-20 text-center px-4 sm:px-6">
               <Badge variant="secondary" className="mb-6">
                 Kuwa Smart Na FedhaSmart
               </Badge>
@@ -219,7 +231,7 @@ const Landing = () => {
                 </span>
               </h1>
               
-              <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
                 FedhaSmart is the most intuitive personal finance platform designed for modern life. 
                 Track expenses, manage budgets, achieve goals, and generate professional reports - all in one place.
               </p>
@@ -257,17 +269,17 @@ const Landing = () => {
             </div>
 
             {/* Key Features Section */}
-            <div className="py-20">
-              <div className="text-center mb-16">
+            <div className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
+              <div className="text-center mb-12 sm:mb-16">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                   Everything You Need for Financial Success
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
                   Powerful features designed to simplify your financial management and help you make smarter money decisions.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
                 <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105 border-0 bg-card/50 backdrop-blur-sm">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-6">
@@ -343,17 +355,17 @@ const Landing = () => {
             </div>
 
             {/* Why Choose FedhaSmart Section */}
-            <div className="py-20 bg-muted/30 rounded-3xl">
-              <div className="text-center mb-16">
+            <div className="py-12 sm:py-16 lg:py-20 bg-muted/30 rounded-3xl mx-4 sm:mx-6">
+              <div className="text-center mb-12 sm:mb-16 px-4 sm:px-6">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
                   Why Choose FedhaSmart?
                 </h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
                   Join thousands of users who trust FedhaSmart for their financial management needs.
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 max-w-5xl mx-auto px-4 sm:px-6">
                 <div className="space-y-8">
                   <div className="flex gap-4">
                     <div className="flex-shrink-0 w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
@@ -433,12 +445,12 @@ const Landing = () => {
             </div>
 
             {/* Call to Action Section */}
-            <div className="py-20 text-center">
-              <div className="max-w-3xl mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-white">
+            <div className="py-12 sm:py-16 lg:py-20 text-center px-4 sm:px-6">
+              <div className="max-w-3xl mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 sm:p-8 lg:p-12 text-white">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6">
                   Ready to Transform Your Financial Life?
                 </h2>
-                <p className="text-xl mb-8 opacity-90">
+                <p className="text-lg sm:text-xl mb-8 opacity-90">
                   Join thousands of users who are already taking control of their finances with FedhaSmart's intelligent money management platform.
                 </p>
                 
@@ -463,7 +475,7 @@ const Landing = () => {
       {/* Simple Footer */}
       <footer className="border-t mt-20">
         <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>&copy; 2025 FedHaSmart. All rights reserved.</p>
+          <p>&copy; 2025 FedhaSmart. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -62,7 +62,7 @@ function AppContent() {
     <AppLayout>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Index />} />
+        <Route index path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/phone-auth" element={<PhoneAuth />} />
         
