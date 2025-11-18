@@ -1,73 +1,65 @@
+import React from 'react';
 import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
-import { useFirebaseAuth } from '@/contexts/FirebaseAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function DebugAuth() {
+const DebugAuth = () => {
   const unified = useUnifiedAuth();
-  const firebase = useFirebaseAuth();
-  const supabase = useAuth();
+  const auth = useAuth();
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <h1 className="text-3xl font-bold mb-6">Authentication Debug</h1>
+    <div className="container mx-auto p-4 space-y-6">
+      <h1 className="text-2xl font-bold mb-6">Authentication Debug</h1>
       
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Unified Auth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify({
-                user: unified.user ? {
-                  id: unified.user.id,
-                  email: unified.user.email,
-                  phoneNumber: unified.user.phoneNumber,
-                  emailVerified: unified.user.emailVerified,
-                  phoneVerified: unified.user.phoneVerified,
-                } : null,
-                loading: unified.loading,
-              }, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Unified Auth (Supabase)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <p><strong>Loading:</strong> {unified.loading ? 'Yes' : 'No'}</p>
+            <p><strong>User ID:</strong> {unified.user?.id || 'None'}</p>
+            <p><strong>Email:</strong> {unified.user?.email || 'None'}</p>
+            <p><strong>Phone:</strong> {unified.user?.phoneNumber || 'None'}</p>
+            <p><strong>Email Verified:</strong> {unified.user?.emailVerified ? 'Yes' : 'No'}</p>
+            <p><strong>Phone Verified:</strong> {unified.user?.phoneVerified ? 'Yes' : 'No'}</p>
+            <p><strong>Display Name:</strong> {unified.user?.displayName || 'None'}</p>
+            <p><strong>Session:</strong> {unified.session ? 'Active' : 'None'}</p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Firebase Auth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify({
-                user: firebase.user ? {
-                  uid: firebase.user.uid,
-                  phoneNumber: firebase.user.phoneNumber,
-                  email: firebase.user.email,
-                } : null,
-                loading: firebase.loading,
-              }, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Legacy Auth Context</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <p><strong>Loading:</strong> {auth.loading ? 'Yes' : 'No'}</p>
+            <p><strong>User ID:</strong> {auth.user?.id || 'None'}</p>
+            <p><strong>Email:</strong> {auth.user?.email || 'None'}</p>
+            <p><strong>Session:</strong> {auth.session ? 'Active' : 'None'}</p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Supabase Auth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify({
-                user: supabase.user ? {
-                  id: supabase.user.id,
-                  email: supabase.user.email,
-                } : null,
-                loading: supabase.loading,
-              }, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Raw User Data</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
+            <strong>Unified User:</strong>
+            {JSON.stringify(unified.user, null, 2)}
+          </pre>
+          <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto mt-4">
+            <strong>Legacy User:</strong>
+            {JSON.stringify(auth.user, null, 2)}
+          </pre>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default DebugAuth;

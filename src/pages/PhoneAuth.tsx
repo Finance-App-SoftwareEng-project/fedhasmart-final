@@ -1,5 +1,5 @@
 import { PhoneAuth } from '@/components/PhoneAuth';
-import { useFirebaseAuth } from '@/contexts/FirebaseAuthContext';
+import { useUnifiedAuth } from '@/contexts/UnifiedAuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect } from 'react';
 
 const PhoneAuthPage = () => {
-  const { user, signOut } = useFirebaseAuth();
+  const { user, signOut } = useUnifiedAuth();
   const navigate = useNavigate();
 
   return (

@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [monthlyExpenses, setMonthlyExpenses] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState<string>('');
   const [exportingPDF, setExportingPDF] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [periodData, setPeriodData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,8 +45,15 @@ export default function Dashboard() {
     if (user) {
       loadUserProfile();
       loadDashboardData();
+      loadPeriodData(chartPeriod);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadPeriodData(chartPeriod);
+    }
+  }, [chartPeriod, user]);
 
   const loadUserProfile = async () => {
     // Try to get display name from unified user first
@@ -77,6 +86,91 @@ export default function Dashboard() {
     }
   };
 
+  const loadPeriodData = async (period: 'daily' | 'weekly' | 'monthly') => {
+    const userId = 'supabaseUser' in user && user.supabaseUser?.id 
+      ? user.supabaseUser.id 
+      : 'id' in user 
+      ? user.id 
+      : null;
+      
+    if (!userId) return;
+
+    try {
+      let dateRange;
+      let groupBy;
+      
+      const now = new Date();
+      
+      switch (period) {
+        case 'daily':
+          // Last 30 days
+          dateRange = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          groupBy = (date: string) => date; // Group by full date
+          break;
+        case 'weekly':
+          // Last 12 weeks
+          dateRange = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+          groupBy = (date: string) => {
+            const d = new Date(date);
+            const week = Math.floor((d.getTime() - dateRange.getTime()) / (7 * 24 * 60 * 60 * 1000));
+            return `Week ${week + 1}`;
+          };
+          break;
+        case 'monthly':
+        default:
+          // Last 12 months
+          dateRange = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000);
+          groupBy = (date: string) => date.substring(0, 7); // Group by year-month
+          break;
+      }
+
+      // Fetch expenses and income for the period
+      const [expensesRes, incomeRes] = await Promise.all([
+        supabase
+          .from('expenses')
+          .select('amount, date, category')
+          .eq('user_id', userId)
+          .gte('date', dateRange.toISOString().split('T')[0])
+          .order('date', { ascending: true }),
+        supabase
+          .from('income')
+          .select('amount, date')
+          .eq('user_id', userId)
+          .gte('date', dateRange.toISOString().split('T')[0])
+          .order('date', { ascending: true })
+      ]);
+
+      // Process data based on period
+      const dataMap = new Map();
+      
+      // Process expenses
+      expensesRes.data?.forEach((expense) => {
+        const key = groupBy(expense.date);
+        const current = dataMap.get(key) || { period: key, expenses: 0, income: 0 };
+        current.expenses += Number(expense.amount);
+        dataMap.set(key, current);
+      });
+
+      // Process income
+      incomeRes.data?.forEach((income) => {
+        const key = groupBy(income.date);
+        const current = dataMap.get(key) || { period: key, expenses: 0, income: 0 };
+        current.income += Number(income.amount);
+        dataMap.set(key, current);
+      });
+
+      // Convert to array and calculate net
+      const periodDataArray = Array.from(dataMap.values()).map(item => ({
+        ...item,
+        net: item.income - item.expenses
+      }));
+
+      setPeriodData(periodDataArray);
+    } catch (error) {
+      console.error('Error loading period data:', error);
+    }
+  };
+
   const loadDashboardData = async () => {
     // Use the appropriate user ID based on account type
     const userId = 'supabaseUser' in user && user.supabaseUser?.id 
@@ -104,6 +198,7 @@ export default function Dashboard() {
       const { data: income } = await supabase
         .from('income')
         .select('amount')
+        .eq('user_id', userId)
         .gte('date', currentMonth.toISOString().split('T')[0]);
 
       const totalIncome = income?.reduce((sum, inc) => sum + Number(inc.amount), 0) || 0;
@@ -115,7 +210,8 @@ export default function Dashboard() {
 
       const { data: budgets } = await supabase
         .from('budgets')
-        .select('limit_amount, spent_amount, period, month, category');
+        .select('limit_amount, spent_amount, period, month, category')
+        .eq('user_id', userId);
 
       // Filter budgets for current month or current week
       const currentMonthStr = currentMonth.toISOString().substring(0, 7); // e.g., "2025-10"
@@ -146,16 +242,11 @@ export default function Dashboard() {
       const remainingBudget = totalBudget - spentOnBudgetedCategories;
 
       // Get goals
-      const { data: goals } = await supabase.from('goals').select('*');
+      const { data: goals } = await supabase.from('goals').select('*').eq('user_id', userId);
       const savingsProgress = goals?.reduce((sum, g) => sum + Number(g.saved_amount), 0) || 0;
 
-      // Get contributions for current month
-      const { data: contributions } = await supabase
-        .from('contributions')
-        .select('amount, date')
-        .gte('date', currentMonth.toISOString().split('T')[0]);
-
-      const totalContributions = contributions?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      // Set contributions to 0 for now (feature can be added later)
+      const totalContributions = 0;
 
       // Calculate financial health (income - expenses - contributions)
       const netBalance = totalIncome - totalExpenses - totalContributions;
@@ -218,9 +309,21 @@ export default function Dashboard() {
       return;
     }
 
+    // Get the correct user ID
+    const userId = 'supabaseUser' in user && user.supabaseUser?.id 
+      ? user.supabaseUser.id 
+      : 'id' in user 
+      ? user.id 
+      : null;
+
+    if (!userId) {
+      toast.error('Unable to identify user for export');
+      return;
+    }
+
     setExportingPDF(true);
     try {
-      await exportFinancialDataToPDF(user.id, 'all');
+      await exportFinancialDataToPDF(userId, 'all');
       toast.success('Complete financial report exported to PDF successfully!');
     } catch (error: any) {
       console.error('Export error:', error);
@@ -363,22 +466,24 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Interactive Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
+          {/* Expenses by Category Pie Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">Expenses by Category</CardTitle>
             </CardHeader>
             <CardContent>
               {expensesByCategory.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={expensesByCategory}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => entry.name}
-                      outerRadius={60}
+                      label={(entry) => `${entry.name}: ${((entry.value / expensesByCategory.reduce((sum, e) => sum + e.value, 0)) * 100).toFixed(1)}%`}
+                      outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -386,41 +491,122 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                    <Tooltip 
+                      formatter={(value: number) => [`KES ${value.toLocaleString()}`, 'Amount']} 
+                      labelFormatter={(label) => `Category: ${label}`}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
                   No expense data available
                 </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Interactive Period Chart */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Monthly Spending Trend</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+              <CardTitle className="text-base sm:text-lg">Financial Trends</CardTitle>
+              
+              {/* Period Selector */}
+              <div className="flex bg-muted rounded-lg p-1">
+                <Button
+                  variant={chartPeriod === 'daily' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartPeriod('daily')}
+                  className="text-xs px-3 py-1"
+                >
+                  Daily
+                </Button>
+                <Button
+                  variant={chartPeriod === 'weekly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartPeriod('weekly')}
+                  className="text-xs px-3 py-1"
+                >
+                  Weekly
+                </Button>
+                <Button
+                  variant={chartPeriod === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartPeriod('monthly')}
+                  className="text-xs px-3 py-1"
+                >
+                  Monthly
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {monthlyExpenses.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={monthlyExpenses}>
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+              {periodData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={periodData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <XAxis 
+                      dataKey="period" 
+                      tick={{ fontSize: 10 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 10 }}
+                      tickFormatter={(value) => `${value.toLocaleString()}`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        `KES ${value.toLocaleString()}`,
+                        name === 'expenses' ? 'Expenses' : name === 'income' ? 'Income' : 'Net Income'
+                      ]}
+                      labelFormatter={(label) => `Period: ${label}`}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
+                    
+                    {/* Expenses Line */}
                     <Line
                       type="monotone"
-                      dataKey="amount"
-                      stroke="hsl(var(--primary))"
+                      dataKey="expenses"
+                      stroke="#ef4444"
                       strokeWidth={2}
-                      name="Spending"
+                      name="Expenses"
+                      dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#ef4444', strokeWidth: 2 }}
+                    />
+                    
+                    {/* Income Line */}
+                    <Line
+                      type="monotone"
+                      dataKey="income"
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      name="Income"
+                      dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#22c55e', strokeWidth: 2 }}
+                    />
+                    
+                    {/* Net Income Line */}
+                    <Line
+                      type="monotone"
+                      dataKey="net"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      name="Net Income"
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+                      strokeDasharray="5 5"
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
-                  No historical data available
+                <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground text-sm">
+                  <TrendingUp className="h-12 w-12 mb-4 opacity-50" />
+                  <p>No {chartPeriod} data available</p>
+                  <p className="text-xs mt-1">Add some transactions to see trends</p>
                 </div>
               )}
             </CardContent>
