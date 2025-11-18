@@ -223,6 +223,7 @@ export default function Income() {
     }
   };
 
+  // UI Layout and rendering
   return (
     <>
       <Navbar />
